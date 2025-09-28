@@ -1,0 +1,80 @@
+<!-- === PWA: أضف داخل <head> في index.html و app.html === -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#10b981">
+
+<!-- iOS PWA -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
+        .then(reg => {
+          if (reg.waiting) reg.waiting.postMessage('SKIP_WAITING');
+          reg.addEventListener('updatefound', () => {
+            const nw = reg.installing;
+            if (!nw) return;
+            nw.addEventListener('statechange', () => {
+              if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+                // SW جديد جاهز — ريڤرش اختياري
+                // location.reload();
+              }
+            });
+          });
+        })
+        .catch(console.error);
+    });
+  }
+</script>
+
+<!-- === PWA: زر التثبيت (أضفه في app.html قبل </body>) === -->
+<button id="pwa-install"
+  style="position:fixed;bottom:84px;left:50%;transform:translateX(-50%);
+         background:#10b981;color:#fff;border:0;border-radius:999px;
+         padding:10px 16px;font-weight:600;box-shadow:0 10px 25px rgba(16,185,129,.35);
+         display:none;z-index:70;">
+  ثبّت التطبيق
+</button>
+
+<div id="ios-a2hs"
+     style="position:fixed;bottom:84px;left:50%;transform:translateX(-50%);
+            background:#111827;color:#e5e7eb;border:1px solid #1f2937;border-radius:12px;
+            padding:10px 12px;font-size:13px;display:none;z-index:69;">
+  على iPhone: افتح <b>Share</b> → اختر <b>Add to Home Screen</b>
+  <button id="ios-a2hs-close"
+          style="margin-right:10px;background:transparent;border:0;color:#9ca3af;">إخفاء</button>
+</div>
+
+<script>
+  let deferredPrompt = null;
+  const btn = document.getElementById('pwa-install');
+  const iosHint = document.getElementById('ios-a2hs');
+  const iosClose = document.getElementById('ios-a2hs-close');
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    btn.style.display = 'inline-block';
+  });
+
+  btn.addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const choice = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    btn.style.display = 'none';
+  });
+
+  window.addEventListener('appinstalled', () => {
+    btn.style.display = 'none';
+  });
+
+  const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator.standalone === true);
+  if (isIos && !isStandalone) {
+    setTimeout(() => { iosHint.style.display = 'block'; }, 1200);
+  }
+  iosClose && (iosClose.onclick = () => iosHint.style.display = 'none');
+</script>

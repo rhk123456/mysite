@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>منصة طلايي</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <style>
+    :root { color-scheme: dark; }
+    html,body{background:#0b1220}
+    .glass { background: rgba(255,255,255,.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,.08) }
+  </style>
+  <link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#10b981">
+
+<!-- iOS PWA -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+
+<script>
+  // تسجيل SW
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
+        .then(reg => {
+          // لو نزل SW جديد، فعّله بسرعة
+          if (reg.waiting) reg.waiting.postMessage('SKIP_WAITING');
+          reg.addEventListener('updatefound', () => {
+            const nw = reg.installing;
+            if (!nw) return;
+            nw.addEventListener('statechange', () => {
+              if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+                // SW جديد جاهز — ريڤرش اختياري
+                // location.reload();
+              }
+            });
+          });
+        })
+        .catch(console.error);
+    });
+  }
+</script>
+
+</head>
+<body class="text-slate-100 min-h-screen flex flex-col selection:bg-sky-500/30">
+  <!-- شريط علوي -->
+  <header class="glass">
+    <div class="max-w-md mx-auto px-4 py-3 flex items-center gap-3">
+      <div class="w-9 h-9 rounded-2xl bg-sky-500/20 border border-sky-400/30 grid place-content-center">
+        <span class="text-sky-300 font-bold">RHK</span>
+      </div>
+      <h1 class="text-lg font-semibold">منصة طلابي</h1>
+      <div class="ml-auto text-sm text-slate-400"></div>
+    </div>
+  </header>
+
+  <!-- المحتوى -->
+  <main class="flex-1">
+    <div class="max-w-md mx-auto p-4">
+      <div class="glass rounded-2xl p-6 mt-6">
+        <h2 class="text-base font-semibold mb-4 text-center">تسجيل الدخول</h2>
+
+        <div id="msg" class="text-sm mb-3 text-center text-slate-300"></div>
+
+        <form id="form-login" class="grid gap-3">
+          <input type="email" id="login-email"
+                 class="rounded-xl bg-white/5 border border-white/10 px-4 py-2 text-white placeholder-slate-400 outline-none focus:ring-2 focus:ring-sky-500/50"
+                 placeholder="الإيميل" required />
+
+          <div class="relative">
+            <input type="password" id="login-password"
+                   class="w-full pr-24 rounded-xl bg-white/5 border border-white/10 px-4 py-2 text-white placeholder-slate-400 outline-none focus:ring-2 focus:ring-sky-500/50"
+                   placeholder="كلمة المرور" required minlength="6" />
+            <button type="button" id="toggle-pass"
+                    class="absolute left-2 top-1/2 -translate-y-1/2 text-xs rounded-lg px-2 py-1
+                           bg-white/5 hover:bg-white/10 text-slate-200 border border-white/10">
+              إظهار
+            </button>
+          </div>
+
+          <!-- مربع ملوّن بالنص يحوي زر الدخول -->
+          <div class="mt-1 flex justify-center">
+            <div class="w-full rounded-2xl bg-sky-600/20 border border-sky-400/40 p-3">
+              <button class="w-full rounded-xl bg-sky-500 hover:bg-sky-400 text-white font-medium py-2">
+                دخول
+              </button>
+            </div>
+          </div>
+        </form>
+
+        <p class="text-xs text-slate-400 mt-4 text-center">
+          إذا ظهر “الحساب غير مفعّل” داخل التطبيق، تواصل مع الأدمن لتفعيل الاشتراك.
+        </p>
+      </div>
+    </div>
+  </main>
+
+  <!-- توقيع -->
+  <footer class="glass py-3 text-center text-sm text-slate-400">
+    by <span class="text-sky-300 font-semibold">rhk</span> —
+    <a href="tel:07711918993" class="hover:text-sky-200">07711918993</a>
+  </footer>
+
+  <script>
+    // مفاتيح Supabase
+    const SUPABASE_URL = "https://yxhezuscajteonrcpcms.supabase.co";
+    const ANON_KEY     = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4aGV6dXNjYWp0ZW9ucmNwY21zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5MTk4MjEsImV4cCI6MjA3NDQ5NTgyMX0.yHLhKPQ-Lu6e-cxzBo8_xsr6Gzr5ORKyKBgDCSTXukE";
+    const client = supabase.createClient(SUPABASE_URL, ANON_KEY);
+
+    const $ = s => document.querySelector(s);
+    const msg = $('#msg');
+
+    // لو مسجّل مسبقًا، ودّه للتطبيق
+    (async ()=>{
+      const { data:{ user } } = await client.auth.getUser();
+      if(user){ location.href = './app.html'; }
+    })();
+
+    // إظهار/إخفاء كلمة المرور
+    $('#toggle-pass').onclick = ()=>{
+      const inp = $('#login-password');
+      const show = inp.type === 'password';
+      inp.type = show ? 'text' : 'password';
+      $('#toggle-pass').textContent = show ? 'إخفاء' : 'إظهار';
+    };
+
+    // دخول
+    $('#form-login').onsubmit = async (e)=>{
+      e.preventDefault();
+      msg.textContent = '';
+      const email = $('#login-email').value.trim();
+      const password = $('#login-password').value;
+
+      const { error } = await client.auth.signInWithPassword({ email, password });
+      if(error){
+        let t = error.message || 'تعذر تسجيل الدخول';
+        if (/Email not confirmed/i.test(t)) t = 'إيميلك غير مؤكد. تواصل مع الأدمن لتفعيل الحساب.';
+        if (/Invalid login credentials/i.test(t)) t = 'بيانات الدخول غير صحيحة.';
+        msg.innerHTML = `<span class="text-rose-300">${t}</span>`;
+        return;
+      }
+      location.href = './app.html';
+    };
+  </script>
+</body>
+</html>
