@@ -17,36 +17,34 @@
     .modal.show{ display:flex; }
   </style>
   <link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#10b981">
+  <meta name="theme-color" content="#10b981">
 
-<!-- iOS PWA -->
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <!-- iOS PWA -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
 
-<script>
-  // تسجيل SW
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
-        .then(reg => {
-          // لو نزل SW جديد، فعّله بسرعة
-          if (reg.waiting) reg.waiting.postMessage('SKIP_WAITING');
-          reg.addEventListener('updatefound', () => {
-            const nw = reg.installing;
-            if (!nw) return;
-            nw.addEventListener('statechange', () => {
-              if (nw.state === 'installed' && navigator.serviceWorker.controller) {
-                // SW جديد جاهز — ريڤرش اختياري
-                // location.reload();
-              }
+  <script>
+    // تسجيل SW
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
+          .then(reg => {
+            if (reg.waiting) reg.waiting.postMessage('SKIP_WAITING');
+            reg.addEventListener('updatefound', () => {
+              const nw = reg.installing;
+              if (!nw) return;
+              nw.addEventListener('statechange', () => {
+                if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+                  // location.reload();
+                }
+              });
             });
-          });
-        })
-        .catch(console.error);
-    });
-  }
-</script>
+          })
+          .catch(console.error);
+      });
+    }
+  </script>
 
 </head>
 <body class="text-slate-100 selection:bg-emerald-500/30">
@@ -74,13 +72,24 @@
     <section id="view-students" class="grid gap-4">
       <section class="glass rounded-2xl p-4">
         <h2 class="text-base font-semibold mb-3">إضافة / تعديل طالب</h2>
-        <form id="student-form" class="grid md:grid-cols-5 gap-3">
+
+        <!-- تم تعديل الشبكة لإضافة حقل الوجبة -->
+        <form id="student-form" class="grid md:grid-cols-6 gap-3">
           <input name="id" type="hidden" />
           <input name="name" class="rounded-xl bg-white/5 border border-white/10 px-4 py-2" placeholder="اسم الطالب" required />
           <input name="phone" class="rounded-xl bg-white/5 border border-white/10 px-4 py-2" placeholder="رقم الهاتف" />
+
+          <!-- حقل الوجبة (شتوية/صيفية) -->
+          <select name="season" class="rounded-xl bg-white/5 border border-white/10 px-4 py-2">
+            <option value="">— الوجبة —</option>
+            <option value="winter">شتوية</option>
+            <option value="summer">صيفية</option>
+          </select>
+
           <input name="plan_amount" type="number" step="0.01" min="0" class="rounded-xl bg-white/5 border border-white/10 px-4 py-2" placeholder="المبلغ الكامل" required />
           <input name="paid_amount" type="number" step="0.01" min="0" class="rounded-xl bg-white/5 border border-white/10 px-4 py-2" placeholder="المبلغ الواصل" value="0" readonly />
-          <div class="flex items-center gap-2 md:col-span-5">
+
+          <div class="flex items-center gap-2 md:col-span-6">
             <button id="save-student" class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white">حفظ</button>
             <button id="reset-student" type="button" class="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10">تفريغ</button>
             <span class="text-sm text-slate-300">المتبقي: <b id="form-balance">0</b></span>
@@ -102,12 +111,13 @@
                 <th class="px-4 py-3 border-b border-white/10 text-right">الهاتف</th>
                 <th class="px-4 py-3 border-b border-white/10 text-right">الكامل</th>
                 <th class="px-4 py-3 border-b border-white/10 text-right">الواصل</th>
-                <th class="px-4 py-3 border-b border-white/10 text-right">الرصيد</th>
+                <th class="px-4 py-3 border-b border-white/10 text-right">المتبقي</th>
+                <th class="px-4 py-3 border-b border-white/10 text-right">الوجبة</th>
                 <th class="px-4 py-3 border-b border-white/10 text-left">إجراءات</th>
               </tr>
             </thead>
             <tbody id="tbody-students">
-              <tr><td class="px-4 py-4 text-slate-400" colspan="6">...</td></tr>
+              <tr><td class="px-4 py-4 text-slate-400" colspan="7">...</td></tr>
             </tbody>
           </table>
         </div>
@@ -236,743 +246,756 @@
     </div>
   </div>
 
-<!-- Modal: تذكير (نسخة مصغّرة) -->
-<div id="rem-modal" class="modal">
-  <div class="glass rounded-xl p-3 w-[420px] max-w-[95vw] relative text-sm">
-    <div class="flex items-center mb-2">
-      <h3 class="font-semibold text-base">🔔 تذكير المحاضرة</h3>
-      <button id="rem-x" class="ml-2 px-2 py-1 text-xs rounded-lg bg-white/5 hover:bg-white/10 border border-white/10">×</button>
-      <button id="rem-close" class="ml-auto px-2.5 py-1.5 text-xs rounded-lg bg-white/5 hover:bg-white/10 border border-white/10">إغلاق</button>
-    </div>
-
-    <div class="space-y-2">
-      <div class="text-xs text-slate-300">النص الجاهز:</div>
-      <textarea id="rem-text" class="w-full h-20 rounded-lg bg-white/5 border border-white/10 px-2.5 py-2 text-sm"></textarea>
-
-      <div class="flex items-center gap-2">
-        <label class="flex items-center gap-2 text-xs text-slate-300">
-          <input id="rem-today-only" type="checkbox" class="rounded" checked>
-          إرسال لطلاب <b>اليوم فقط</b>
-        </label>
-        <span id="rem-day-note" class="text-[11px] text-slate-400"></span>
+  <!-- Modal: تذكير (نسخة مصغّرة) -->
+  <div id="rem-modal" class="modal">
+    <div class="glass rounded-xl p-3 w-[420px] max-w-[95vw] relative text-sm">
+      <div class="flex items-center mb-2">
+        <h3 class="font-semibold text-base">🔔 تذكير المحاضرة</h3>
+        <button id="rem-x" class="ml-2 px-2 py-1 text-xs rounded-lg bg-white/5 hover:bg-white/10 border border-white/10">×</button>
+        <button id="rem-close" class="ml-auto px-2.5 py-1.5 text-xs rounded-lg bg-white/5 hover:bg-white/10 border border-white/10">إغلاق</button>
       </div>
 
-      <div class="flex gap-2">
-        <button id="rem-copy" class="px-2.5 py-1.5 text-xs rounded-lg bg-emerald-500 hover:bg-emerald-400 text-white">نسخ النص</button>
-        <button id="rem-open-all-wa" class="px-2.5 py-1.5 text-xs rounded-lg bg-sky-500 hover:bg-sky-400 text-white">فتح واتساب للطلاب المحددين</button>
-      </div>
+      <div class="space-y-2">
+        <div class="text-xs text-slate-300">النص الجاهز:</div>
+        <textarea id="rem-text" class="w-full h-20 rounded-lg bg-white/5 border border-white/10 px-2.5 py-2 text-sm"></textarea>
 
-      <div class="text-xs text-slate-300">روابط سريعة (لهذا الوقت فقط):</div>
-      <div id="rem-links" class="grid grid-cols-1 gap-2 max-h-48 overflow-auto pr-1"></div>
+        <div class="flex items-center gap-2">
+          <label class="flex items-center gap-2 text-xs text-slate-300">
+            <input id="rem-today-only" type="checkbox" class="rounded" checked>
+            إرسال لطلاب <b>اليوم فقط</b>
+          </label>
+          <span id="rem-day-note" class="text-[11px] text-slate-400"></span>
+        </div>
 
-      <div class="flex justify-end pt-1">
-        <button id="rem-close-bottom" class="px-2.5 py-1.5 text-xs rounded-lg bg-white/5 hover:bg-white/10 border border-white/10">إغلاق</button>
+        <div class="flex gap-2">
+          <button id="rem-copy" class="px-2.5 py-1.5 text-xs rounded-lg bg-emerald-500 hover:bg-emerald-400 text-white">نسخ النص</button>
+          <button id="rem-open-all-wa" class="px-2.5 py-1.5 text-xs rounded-lg bg-sky-500 hover:bg-sky-400 text-white">فتح واتساب للطلاب المحددين</button>
+        </div>
+
+        <div class="text-xs text-slate-300">روابط سريعة (لهذا الوقت فقط):</div>
+        <div id="rem-links" class="grid grid-cols-1 gap-2 max-h-48 overflow-auto pr-1"></div>
+
+        <div class="flex justify-end pt-1">
+          <button id="rem-close-bottom" class="px-2.5 py-1.5 text-xs rounded-lg bg-white/5 hover:bg-white/10 border border-white/10">إغلاق</button>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
+  <script>
+  /* ===== Supabase ===== */
+  const client = supabase.createClient(
+    "https://yxhezuscajteonrcpcms.supabase.co",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4aGV6dXNjYWp0ZW9ucmNwY21zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5MTk4MjEsImV4cCI6MjA3NDQ5NTgyMX0.yHLhKPQ-Lu6e-cxzBo8_xsr6Gzr5ORKyKBgDCSTXukE"
+  );
 
-<script>
-/* ===== Supabase ===== */
-const client = supabase.createClient(
-  "https://yxhezuscajteonrcpcms.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4aGV6dXNjYWp0ZW9ucmNwY21zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5MTk4MjEsImV4cCI6MjA3NDQ5NTgyMX0.yHLhKPQ-Lu6e-cxzBo8_xsr6Gzr5ORKyKBgDCSTXukE"
-);
+  client.auth.onAuthStateChange((_, session) => { if (session?.access_token) client.realtime.setAuth(session.access_token); });
+  async function ensureRealtimeAuth(){ const { data:{ session } } = await client.auth.getSession(); if (session?.access_token) client.realtime.setAuth(session.access_token); }
 
-client.auth.onAuthStateChange((_, session) => { if (session?.access_token) client.realtime.setAuth(session.access_token); });
-async function ensureRealtimeAuth(){ const { data:{ session } } = await client.auth.getSession(); if (session?.access_token) client.realtime.setAuth(session.access_token); }
-
-/* ===== Helpers ===== */
-const $ = s => document.querySelector(s);
-const $$ = s => Array.from(document.querySelectorAll(s));
-function toast(msg='تم ✅'){ const t=$('#toast'); t.querySelector('div').textContent=msg; t.classList.remove('hidden'); clearTimeout(t._timer); t._timer=setTimeout(()=>t.classList.add('hidden'),1400); }
-function money(n){ return Number(n||0).toLocaleString('ar-IQ',{minimumFractionDigits:2, maximumFractionDigits:2}); }
-function wdName(n){ return ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'][Number(n)||0]; }
-function fmtHM(t){ return t?.slice(0,5) || '' }
-function nextDateForWeekday(wd){ const now=new Date(); const diff=((wd-now.getDay())+7)%7; return new Date(now.getFullYear(), now.getMonth(), now.getDate()+diff, 0,0,0,0); }
-function normalizeIQ(phone){
-  if(!phone) return '';
-  const digits = phone.replace(/\D+/g,'');
-  if(digits.startsWith('964')) return digits;
-  if(digits.startsWith('0')) return '964' + digits.slice(1);
-  return digits;
-}
-$('#logout').onclick = async ()=>{ await client.auth.signOut(); location.href='./index.html'; };
-
-/* ===== Guard ===== */
-async function guard(){
-  const { data:{ user } } = await client.auth.getUser();
-  if(!user){ location.href='./index.html'; return null; }
-  const { data: profile } = await client.from('profiles').select('role').eq('id', user.id).single();
-  const role = profile?.role || 'teacher';
-  if (role==='admin') {
-    const badge=document.createElement('span');
-    badge.className='ml-2 text-xs px-2 py-1 rounded bg-emerald-500/20 border border-emerald-400/30 text-emerald-300';
-    badge.textContent='Admin';
-    document.getElementById('hdrTitle').appendChild(badge);
-  } else {
-    const nowIso = new Date().toISOString();
-    const { count } = await client.from('subscriptions').select('id',{head:true,count:'exact'})
-      .eq('user_id', user.id).eq('active', true).lte('starts_at', nowIso).gte('ends_at', nowIso);
-    if(!count) $('#warn').classList.remove('hidden'); else $('#warn').classList.add('hidden');
+  /* ===== Helpers ===== */
+  const $ = s => document.querySelector(s);
+  const $$ = s => Array.from(document.querySelectorAll(s));
+  function toast(msg='تم ✅'){ const t=$('#toast'); t.querySelector('div').textContent=msg; t.classList.remove('hidden'); clearTimeout(t._timer); t._timer=setTimeout(()=>t.classList.add('hidden'),1400); }
+  function money(n){ return Number(n||0).toLocaleString('ar-IQ',{minimumFractionDigits:2, maximumFractionDigits:2}); }
+  function wdName(n){ return ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'][Number(n)||0]; }
+  function fmtHM(t){ return t?.slice(0,5) || '' }
+  function nextDateForWeekday(wd){ const now=new Date(); const diff=((wd-now.getDay())+7)%7; return new Date(now.getFullYear(), now.getMonth(), now.getDate()+diff, 0,0,0,0); }
+  function normalizeIQ(phone){
+    if(!phone) return '';
+    const digits = phone.replace(/\D+/g,'');
+    if(digits.startsWith('964')) return digits;
+    if(digits.startsWith('0')) return '964' + digits.slice(1);
+    return digits;
   }
-  return user;
-}
+  function seasonName(v){ return v==='winter' ? 'شتوية' : (v==='summer' ? 'صيفية' : '—'); }
+  function scheduleLocalNotifsForToday(){} // no-op لتجنب أي أخطاء إن ما معرّفة
 
-/* ===== Tabs ===== */
-const viewStudents=$('#view-students'), viewSchedule=$('#view-schedule'), viewAtt=$('#view-att');
-function showTab(k){
-  viewStudents.classList.toggle('hidden', k!=='students');
-  viewSchedule.classList.toggle('hidden', k!=='schedule');
-  viewAtt.classList.toggle('hidden', k!=='att');
-  if(k==='schedule'){ $('#qBoard').value=''; refreshBoard(); }
-}
-$('#tab-students').onclick = ()=> showTab('students');
-$('#tab-schedule').onclick = ()=> showTab('schedule');
-$('#tab-att').onclick = ()=> showTab('att');
+  $('#logout').onclick = async ()=>{ await client.auth.signOut(); location.href='./index.html'; };
 
-/* ===== الطلاب ===== */
-const sForm = $('#student-form'), tbody = $('#tbody-students');
-function sFormGet(){ const fd=new FormData(sForm); return { id:fd.get('id')||null, name:(fd.get('name')||'').trim(), phone:(fd.get('phone')||'').trim()||null, plan_amount:Number(fd.get('plan_amount')||0), paid_amount:Number(fd.get('paid_amount')||0) }; }
-function sFormSet(x){
-  sForm.elements.id.value = x?.id || '';
-  sForm.elements.name.value = x?.name || '';
-  sForm.elements.phone.value = x?.phone || '';
-  sForm.elements.plan_amount.value = x?.plan_amount ?? '';
-  sForm.elements.paid_amount.value = x?.paid_amount ?? 0;
-  const bal = (Number(sForm.elements.plan_amount.value||0)-Number(sForm.elements.paid_amount.value||0)).toFixed(2);
-  $('#form-balance').textContent = bal;
-}
-$('#reset-student').onclick = ()=> sFormSet(null);
-sForm.elements.plan_amount.oninput = ()=> $('#form-balance').textContent = (Number(sForm.elements.plan_amount.value||0)-Number(sForm.elements.paid_amount.value||0)).toFixed(2);
-
-$('#save-student').onclick = async (e)=>{
-  e.preventDefault();
-  const { data:{ user } } = await client.auth.getUser();
-  const v = sFormGet();
-  if(!v.name) return alert('اكتب اسم الطالب'); if(v.plan_amount < 0) return alert('المبلغ الكامل يجب أن يكون موجبًا');
-
-  if(!v.id){
-    const payload = { name:v.name, phone:v.phone, plan_amount:v.plan_amount, paid_amount:v.paid_amount, created_by: user.id };
-    const { error } = await client.from('students').insert(payload);
-    if(error) return alert(error.message); toast('تمت إضافة الطالب');
-  } else {
-    const { error } = await client.from('students').update({ name:v.name, phone:v.phone, plan_amount:v.plan_amount }).eq('id', Number(v.id));
-    if(error) return alert(error.message); toast('تم تحديث الطالب');
-  }
-  sFormSet(null); await loadStudents(); await refreshBoard();
-};
-
-async function loadStudents(filter=''){
-  tbody.innerHTML = `<tr><td class="px-4 py-4 text-slate-400" colspan="6">...</td></tr>`;
-  const base = client.from('students').select('id,name,phone,plan_amount,paid_amount').order('id',{ascending:false});
-  const { data, error } = filter ? await base.or(`name.ilike.%${filter}%,phone.ilike.%${filter}%`) : await base;
-  if(error){ tbody.innerHTML = `<tr><td class="px-4 py-4 text-rose-300" colspan="6">${error.message}</td></tr>`; return; }
-  const rows = (data||[]).map(s=>({...s, balance:Number(s.plan_amount)-Number(s.paid_amount)}));
-  if(!rows.length){ tbody.innerHTML = `<tr><td class="px-4 py-6 text-slate-400" colspan="6">لا يوجد طلاب</td></tr>`; return; }
-  tbody.innerHTML=''; rows.forEach(r=>{
-    const tr=document.createElement('tr');
-    tr.innerHTML=`
-      <td class="px-4 py-3 border-b border-white/10 font-medium">${r.name}</td>
-      <td class="px-4 py-3 border-b border-white/10 text-slate-300">${r.phone||''}</td>
-      <td class="px-4 py-3 border-b border-white/10 text-emerald-300">${money(r.plan_amount)}</td>
-      <td class="px-4 py-3 border-b border-white/10 text-sky-300">${money(r.paid_amount)}</td>
-      <td class="px-4 py-3 border-b border-white/10 ${r.balance>0?'text-amber-300':'text-emerald-300'}">${money(r.balance)}</td>
-      <td class="px-4 py-3 border-b border-white/10 text-left">
-        <div class="flex gap-2 justify-end">
-          <button class="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-white" data-pay="${r.id}" data-name="${r.name}">دفعة</button>
-          <button class="px-3 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-white" data-edit="${r.id}">تعديل</button>
-          <button class="px-3 py-1.5 rounded-lg bg-rose-500 hover:bg-rose-400 text-white" data-del="${r.id}">حذف</button>
-        </div>
-      </td>`;
-    tbody.appendChild(tr);
-  });
-  tbody.querySelectorAll('[data-edit]').forEach(b=> b.onclick = async ()=>{
-    const id=Number(b.dataset.edit);
-    const { data, error } = await client.from('students').select('*').eq('id', id).single();
-    if(error) return alert(error.message); sFormSet(data); window.scrollTo({top:0,behavior:'smooth'}); showTab('students');
-  });
-  tbody.querySelectorAll('[data-del]').forEach(b=> b.onclick = async ()=>{
-    const id=Number(b.dataset.del); if(!confirm('حذف الطالب؟')) return;
-    const { error } = await client.from('students').delete().eq('id', id);
-    if(error) return alert(error.message); toast('تم الحذف'); await loadStudents($('#qStudents').value.trim()); await refreshBoard();
-  });
-  tbody.querySelectorAll('[data-pay]').forEach(b=> b.onclick = ()=> openPayment(Number(b.dataset.pay), b.dataset.name));
-}
-$('#qStudents').oninput = ()=>{ const q=$('#qStudents'); clearTimeout(q._t); q._t=setTimeout(()=>loadStudents(q.value.trim()), 220); };
-$('#export-csv').onclick = async ()=>{
-  const { data } = await client.from('students').select('*').order('id',{ascending:true});
-  const headers = data?.[0]? Object.keys(data[0]) : [];
-  const esc = v=>`"${String(v??'').replace(/"/g,'""')}"`;
-  const csv = [headers.join(',')].concat((data||[]).map(r=>headers.map(h=>esc(r[h])).join(','))).join('\n');
-  const blob = new Blob([csv],{type:'text/csv;charset=utf-8;'}); const url = URL.createObjectURL(blob);
-  const a=document.createElement('a'); a.href=url; a.download=`students_${Date.now()}.csv`; a.click(); URL.revokeObjectURL(url);
-  toast('تم تصدير CSV');
-};
-
-/* ===== Modal: Payments ===== */
-const payModal = $('#pay-modal'), payForm = $('#pay-form'), payList = $('#pay-list'), payInfo = $('#pay-info');
-$('#pay-close').onclick = ()=> payModal.classList.remove('show');
-
-function openPayment(studentId, name){
-  payForm.reset();
-  payForm.elements.student_id.value = studentId;
-  $('#pay-student-name').textContent = name;
-  const dt = new Date();
-  payForm.elements.paid_at.value = new Date(dt.getTime()-dt.getTimezoneOffset()*60000).toISOString().slice(0,16);
-  payInfo.textContent = '';
-  payModal.classList.add('show');
-  loadPayments(studentId);
-}
-async function loadPayments(studentId){
-  payList.innerHTML = '<div class="text-slate-400">...</div>';
-  const { data, error } = await client.from('payments').select('id,amount,paid_at,method,note').eq('student_id', studentId).order('paid_at',{ascending:false}).limit(50);
-  if (error) { payList.innerHTML = `<div class="text-rose-300">${error.message}</div>`; return; }
-  if (!data?.length) { payList.innerHTML = `<div class="text-slate-400">لا توجد دفعات</div>`; return; }
-  payList.innerHTML = '';
-  data.forEach(p=>{
-    const div=document.createElement('div');
-    div.className='glass rounded-xl px-3 py-2 flex items-center gap-3';
-    const d = new Date(p.paid_at);
-    div.innerHTML = `
-      <div class="text-emerald-300 font-semibold">${money(p.amount)}</div>
-      <div class="text-slate-300 text-sm mr-auto">${d.toLocaleDateString('ar-IQ')} ${d.toLocaleTimeString('ar-IQ',{hour:'2-digit',minute:'2-digit'})}</div>
-      <div class="text-xs text-slate-400">${p.method||''}</div>
-      ${p.note?`<div class="text-xs text-slate-400">— ${p.note}</div>`:''}
-      <button class="px-2 py-1 text-xs rounded bg-rose-500 hover:bg-rose-400 text-white" data-delpay="${p.id}">حذف</button>
-    `;
-    payList.appendChild(div);
-  });
-  payList.querySelectorAll('[data-delpay]').forEach(b=> b.onclick = ()=> deletePayment(Number(b.dataset.delpay)));
-}
-async function deletePayment(id){
-  if(!confirm('حذف الدفعة؟')) return;
-  const { error } = await client.from('payments').delete().eq('id', id);
-  if (error) return alert(error.message);
-  toast('حُذفت الدفعة');
-  const sid = Number(payForm.elements.student_id.value);
-  await loadPayments(sid);
-  await loadStudents($('#qStudents').value.trim());
-}
-$('#pay-save').onclick = async (e)=>{
-  e.preventDefault();
-  const fd = new FormData(payForm);
-  const student_id = Number(fd.get('student_id'));
-  const amount = Number(fd.get('amount')||0);
-  const paid_at = fd.get('paid_at') ? new Date(fd.get('paid_at')).toISOString() : new Date().toISOString();
-  const method = fd.get('method') || null;
-  const note = (fd.get('note')||'').trim() || null;
-  if(!(student_id>0) || !(amount>0)) return alert('تحقق من الحقول');
-
-  const { data:{ user } } = await client.auth.getUser();
-  const { error } = await client.from('payments').insert({ student_id, amount, paid_at, method, note, created_by: user.id });
-  if (error) return alert(error.message);
-
-  const { data: st } = await client.from('students').select('plan_amount,paid_amount,name,phone,id').eq('id', student_id).single();
-  const remaining = (Number(st?.plan_amount||0) - Number(st?.paid_amount||0)).toFixed(2);
-  $('#pay-info').textContent = `الواصل: ${money(st?.paid_amount||0)} | المتبقي: ${money(remaining)}`;
-  if (String(sForm.elements.id.value||'') === String(student_id)) {
-    sFormSet({ id: st.id, name: st.name, phone: st.phone, plan_amount: st.plan_amount, paid_amount: st.paid_amount });
-  }
-  await loadPayments(student_id);
-  await loadStudents($('#qStudents').value.trim());
-  toast('انحفظت الدفعة ✔︎');
-};
-
-/* ===== الأوقات + تذكير ===== */
-const slotForm = $('#slot-form'), slotsList=$('#slots-list');
-function slotFormGet(){ const fd=new FormData(slotForm); return { id:fd.get('id')||null, title:(fd.get('title')||'').trim(), weekday:Number(fd.get('weekday')), start_time:fd.get('start_time'), end_time:fd.get('end_time'), capacity:Number(fd.get('capacity')||25) }; }
-function slotFormSet(x){
-  slotForm.elements.id.value = x?.id || '';
-  slotForm.elements.title.value = x?.title || '';
-  slotForm.elements.weekday.value = x?.weekday ?? 0;
-  slotForm.elements.start_time.value = x?.start_time || '';
-  slotForm.elements.end_time.value = x?.end_time || '';
-  slotForm.elements.capacity.value = x?.capacity ?? 25;
-}
-$('#reset-slot').onclick = ()=> slotFormSet(null);
-
-$('#save-slot').onclick = async (e)=>{
-  e.preventDefault();
-  const { data:{ user } } = await client.auth.getUser();
-  const v = slotFormGet();
-  if(!v.title) return alert('اكتب عنوان الوقت');
-  if(!v.start_time || !v.end_time) return alert('حدّد وقت البداية والنهاية');
-  if(v.capacity<=0) return alert('السعة يجب أن تكون موجبة');
-
-  if(!v.id){
-    const payload = { ...v, created_by: user.id }; delete payload.id;
-    const { error } = await client.from('slots').insert(payload);
-    if(error) return alert(error.message); toast('تمت إضافة الوقت');
-  } else {
-    const { data: oldSlot, error: oldErr } = await client.from('slots').select('weekday,start_time,end_time,capacity').eq('id', Number(v.id)).single();
-    if (oldErr) return alert(oldErr.message);
-    const timeChanged = (oldSlot.start_time!==v.start_time) || (oldSlot.end_time!==v.end_time);
-
-    const { count, error: cErr } = await client.from('student_slots').select('id',{head:true,count:'exact'}).eq('slot_id', Number(v.id));
-    if(!cErr && count > v.capacity) return alert(`السعة الجديدة (${v.capacity}) أقل من عدد الطلاب الحالي (${count}).`);
-
-    const { error } = await client.from('slots').update({ title:v.title, weekday:v.weekday, start_time:v.start_time, end_time:v.end_time, capacity:v.capacity }).eq('id', Number(v.id));
-    if(error) return alert(error.message);
-
-    if (timeChanged) {
-      const { error: delErr } = await client.from('student_slots').delete().eq('slot_id', Number(v.id));
-      if (delErr) console.warn('Delete assigns blocked (RLS?)', delErr.message);
+  /* ===== Guard ===== */
+  async function guard(){
+    const { data:{ user } } = await client.auth.getUser();
+    if(!user){ location.href='./index.html'; return null; }
+    const { data: profile } = await client.from('profiles').select('role').eq('id', user.id).single();
+    const role = profile?.role || 'teacher';
+    if (role==='admin') {
+      const badge=document.createElement('span');
+      badge.className='ml-2 text-xs px-2 py-1 rounded bg-emerald-500/20 border border-emerald-400/30 text-emerald-300';
+      badge.textContent='Admin';
+      document.getElementById('hdrTitle').appendChild(badge);
+    } else {
+      const nowIso = new Date().toISOString();
+      const { count } = await client.from('subscriptions').select('id',{head:true,count:'exact'})
+        .eq('user_id', user.id).eq('active', true).lte('starts_at', nowIso).gte('ends_at', nowIso);
+      if(!count) $('#warn').classList.remove('hidden'); else $('#warn').classList.add('hidden');
     }
-    toast('تم تحديث الوقت');
+    return user;
   }
-  slotFormSet(null); await refreshSlots(); await refreshBoard();
-};
 
-$('#copy-slot').onclick = async (e)=>{
-  e.preventDefault();
-  const { data:{ user } } = await client.auth.getUser();
-  const v = slotFormGet();
-  if(!v.title || !v.start_time || !v.end_time) return alert('أكمل الحقول');
-  const payload = { title:v.title, weekday:v.weekday, start_time:v.start_time, end_time:v.end_time, capacity:v.capacity, created_by: user.id };
-  const { error } = await client.from('slots').insert(payload);
-  if (error) return alert(error.message);
-  toast('تم إنشاء وقت جديد (نسخة)'); await refreshSlots(); await refreshBoard();
-};
+  /* ===== Tabs ===== */
+  const viewStudents=$('#view-students'), viewSchedule=$('#view-schedule'), viewAtt=$('#view-att');
+  function showTab(k){
+    viewStudents.classList.toggle('hidden', k!=='students');
+    viewSchedule.classList.toggle('hidden', k!=='schedule');
+    viewAtt.classList.toggle('hidden', k!=='att');
+    if(k==='schedule'){ $('#qBoard').value=''; refreshBoard(); }
+  }
+  $('#tab-students').onclick = ()=> showTab('students');
+  $('#tab-schedule').onclick = ()=> showTab('schedule');
+  $('#tab-att').onclick = ()=> showTab('att');
 
-$('#clone-week').onclick = async ()=>{
-  const { data:{ user } } = await client.auth.getUser();
-  const { data: slots } = await client.from('slots').select('title,weekday,start_time,end_time,capacity').order('weekday');
-  if(!slots?.length) return alert('لا يوجد أوقات لاستنساخها');
-  const rows = slots.map(s=>({ ...s, title: `${s.title} (نسخة)`, created_by: user.id }));
-  const { error } = await client.from('slots').insert(rows);
-  if (error) return alert(error.message);
-  toast(`تم استنساخ ${rows.length} وقت`);
-  await refreshSlots(); await refreshBoard();
-};
+  /* ===== الطلاب ===== */
+  const sForm = $('#student-form'), tbody = $('#tbody-students');
+  function sFormGet(){
+    const fd=new FormData(sForm);
+    return {
+      id:fd.get('id')||null,
+      name:(fd.get('name')||'').trim(),
+      phone:(fd.get('phone')||'').trim()||null,
+      season: (fd.get('season')||'') || null,
+      plan_amount:Number(fd.get('plan_amount')||0),
+      paid_amount:Number(fd.get('paid_amount')||0)
+    };
+  }
+  function sFormSet(x){
+    sForm.elements.id.value = x?.id || '';
+    sForm.elements.name.value = x?.name || '';
+    sForm.elements.phone.value = x?.phone || '';
+    sForm.elements.season.value = x?.season || '';
+    sForm.elements.plan_amount.value = x?.plan_amount ?? '';
+    sForm.elements.paid_amount.value = x?.paid_amount ?? 0;
+    const remain = (Number(sForm.elements.plan_amount.value||0)-Number(sForm.elements.paid_amount.value||0)).toFixed(2);
+    $('#form-balance').textContent = remain;
+  }
+  $('#reset-student').onclick = ()=> sFormSet(null);
+  sForm.elements.plan_amount.oninput = ()=> {
+    $('#form-balance').textContent = (Number(sForm.elements.plan_amount.value||0)-Number(sForm.elements.paid_amount.value||0)).toFixed(2);
+  };
 
-async function refreshSlots(){
-  const { data: slots, error: slotErr } = await client.from('slots').select('id,title,weekday,start_time,end_time,capacity').order('weekday', { ascending: true });
-  if (slotErr){ slotsList.innerHTML = `<div class="text-rose-300">${slotErr.message}</div>`; return; }
+  $('#save-student').onclick = async (e)=>{
+    e.preventDefault();
+    const { data:{ user } } = await client.auth.getUser();
+    const v = sFormGet();
+    if(!v.name) return alert('اكتب اسم الطالب');
+    if(v.plan_amount < 0) return alert('المبلغ الكامل يجب أن يكون موجبًا');
 
-  const { data: ss } = await client.from('student_slots').select('slot_id');
-  const countMap = {};
-  (ss||[]).forEach(r=>{ countMap[r.slot_id]=(countMap[r.slot_id]||0)+1; });
+    if(!v.id){
+      const payload = { name:v.name, phone:v.phone, season:v.season, plan_amount:v.plan_amount, paid_amount:v.paid_amount, created_by: user.id };
+      const { error } = await client.from('students').insert(payload);
+      if(error) return alert(error.message);
+      toast('تمت إضافة الطالب');
+    } else {
+      const { error } = await client.from('students').update({ name:v.name, phone:v.phone, season:v.season, plan_amount:v.plan_amount }).eq('id', Number(v.id));
+      if(error) return alert(error.message);
+      toast('تم تحديث الطالب');
+    }
+    sFormSet(null); await loadStudents(); await refreshBoard();
+  };
 
-  slotsList.innerHTML='';
-  (slots||[]).forEach(sl=>{
-    const filled=countMap[sl.id]||0;
-    const full = filled>=sl.capacity;
-    const card=document.createElement('div');
-    card.className='glass rounded-xl p-3 flex items-center gap-3';
-    card.innerHTML=`
-      <div class="w-12 h-12 grid place-content-center rounded-xl ${full?'bg-rose-500/20 border-rose-400/30':'bg-emerald-500/20 border-emerald-400/30'} border">
-        <span class="text-sm font-bold ${full?'text-rose-300':'text-emerald-300'}">${filled}/${sl.capacity}</span>
-      </div>
-      <div class="mr-auto">
-        <div class="font-semibold">${sl.title} <span class="text-xs text-slate-400">(#${sl.id})</span></div>
-        <div class="text-slate-400 text-xs">${wdName(sl.weekday)} • ${fmtHM(sl.start_time)}–${fmtHM(sl.end_time)}</div>
-      </div>
-      <div class="flex gap-2">
-        <button class="px-3 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-white" data-edit-slot="${sl.id}">تعديل</button>
-        <button class="px-3 py-1.5 rounded-lg bg-rose-500 hover:bg-rose-400 text-white" data-del-slot="${sl.id}">حذف</button>
-        <button class="px-3 py-1.5 rounded-lg bg-indigo-500 hover:bg-indigo-400 text-white" title="تذكير" data-rem="${sl.id}">🔔</button>
-      </div>`;
-    slotsList.appendChild(card);
-  });
-  slotsList.querySelectorAll('[data-edit-slot]').forEach(b=> b.onclick = ()=> handleEditSlot(Number(b.dataset.editSlot)));
-  slotsList.querySelectorAll('[data-del-slot]').forEach(b=> b.onclick = ()=> handleDeleteSlot(Number(b.dataset.delSlot)));
-  slotsList.querySelectorAll('[data-rem]').forEach(b=> b.onclick = ()=> openReminder(Number(b.dataset.rem)));
-  $('#slot-hint').textContent = `غير موزّعين: ${await getUnassignedCount()}`;
-}
-
-async function handleEditSlot(id){
-  const { data, error } = await client.from('slots').select('*').eq('id', id).single();
-  if(error) return alert(error.message);
-  slotFormSet(data); window.scrollTo({ top: 0, behavior: 'smooth' }); showTab('schedule');
-}
-async function handleDeleteSlot(id){
-  const { count } = await client.from('student_slots').select('id', { head:true, count:'exact' }).eq('slot_id', id);
-  if(!confirm(`تأكيد الحذف؟${count?'\nتنبيه: يوجد '+count+' طالب مرتبط':''}`)) return;
-  const { error } = await client.from('slots').delete().eq('id', id);
-  if(error) return alert(error.message);
-  toast('تم حذف الوقت'); await refreshSlots(); await refreshBoard();
-}
-async function getUnassignedCount(){
-  const { data: stu } = await client.from('students').select('id');
-  const { data: ss }  = await client.from('student_slots').select('student_id');
-  const assigned = new Set((ss||[]).map(x=>x.student_id));
-  return (stu||[]).filter(s=>!assigned.has(s.id)).length;
-}
-
-/* ===== لوحة السحب/الإفلات ===== */
-const board = $('#board'); let cache = { students:[], slots:[], assigns:[] };
-const boardSearch=$('#qBoard'); const dayFilterEl = $('#dayFilter'); let boardDayFilter = 'all';
-dayFilterEl.onchange = ()=>{ boardDayFilter = dayFilterEl.value; renderBoard(boardSearch.value); };
-boardSearch.oninput = ()=>{ clearTimeout(boardSearch._t); boardSearch._t=setTimeout(()=>renderBoard(boardSearch.value), 200); };
-
-async function loadBoardData(){
-  const [ S, SL, SS ] = await Promise.all([
-    client.from('students').select('id,name,phone').order('id',{ascending:false}),
-    client.from('slots').select('id,title,weekday,start_time,end_time,capacity').order('weekday',{ascending:true}),
-    client.from('student_slots').select('student_id,slot_id')
-  ]);
-  if (S.error)  console.error('students load error:', S.error?.message);
-  if (SL.error) console.error('slots load error:', SL.error?.message);
-  if (SS.error) console.error('student_slots load error:', SS.error?.message);
-  cache.students = Array.isArray(S.data)  ? S.data  : [];
-  cache.slots    = Array.isArray(SL.data) ? SL.data : [];
-  cache.assigns  = Array.isArray(SS.data) ? SS.data : [];
-}
-
-function renderBoard(filter=''){
-  const q=(filter||'').trim().toLowerCase();
-  const mapAssign=new Map(cache.assigns.map(a=>[a.student_id,a.slot_id]));
-  const cols=[{id:null,title:'غير موزّع',desc:'طلاب بلا وقت محدد',capacity:Infinity}];
-  cache.slots.filter(sl => boardDayFilter==='all' || String(sl.weekday)===String(boardDayFilter))
-    .forEach(sl=> cols.push({ id:sl.id, title:`${sl.title}  (#${sl.id})`, desc:`${wdName(sl.weekday)} • ${fmtHM(sl.start_time)}–${fmtHM(sl.end_time)} • سعة ${sl.capacity}`, capacity:sl.capacity }));
-
-  const groups=new Map(cols.map(c=>[String(c.id),[]]));
-  cache.students.forEach(s=>{
-    if(q && !(s.name?.toLowerCase().includes(q) || (s.phone||'').includes(q))) return;
-    const sid = mapAssign.get(s.id) ?? null; const key = groups.has(String(sid)) ? String(sid) : 'null';
-    groups.get(key).push(s);
-  });
-
-  board.innerHTML='';
-  cols.forEach(c=>{
-    const g=groups.get(String(c.id))||[];
-    const col=document.createElement('div'); col.className='rounded-xl bg-white/5 border border-white/10 p-3'; col.dataset.slotId=c.id??'';
-    col.innerHTML=`
-      <div class="flex items-center gap-2 mb-2">
-        <div class="font-semibold">${c.title}</div>
-        <div class="text-xs text-slate-400 mr-auto">${c.desc||''}</div>
-        <span class="text-xs rounded-full px-2 py-0.5 bg-white/10 border border-white/10">${g.length}${isFinite(c.capacity)?'/'+c.capacity:''}</span>
-        ${ c.id!==null ? `
-          <button class="ml-2 px-2 py-1 text-xs rounded bg-indigo-500 hover:bg-indigo-400 text-white" data-col-remind="${c.id}">🔔</button>
-          <button class="px-2 py-1 text-xs rounded bg-sky-500 hover:bg-sky-400 text-white" data-col-edit="${c.id}">تعديل</button>
-          <button class="px-2 py-1 text-xs rounded bg-rose-500 hover:bg-rose-400 text-white" data-col-del="${c.id}">حذف</button>` : '' }
-      </div>
-      <div class="min-h-[80px] space-y-2" data-dropzone></div>`;
-    const zone=col.querySelector('[data-dropzone]');
-    g.forEach(s=>{
-      const card=document.createElement('div'); card.className='glass rounded-lg px-3 py-2 cursor-move'; card.draggable=true; card.dataset.studentId=s.id;
-      card.innerHTML=`<div class="font-medium">${s.name}</div><div class="text-xs text-slate-400">${s.phone||''}</div>`;
-      card.addEventListener('dragstart', ev=>{ card.classList.add('dragging'); ev.dataTransfer.setData('text/plain', String(s.id)); });
-      card.addEventListener('dragend', ()=> card.classList.remove('dragging')); zone.appendChild(card);
+  async function loadStudents(filter=''){
+    tbody.innerHTML = `<tr><td class="px-4 py-4 text-slate-400" colspan="7">...</td></tr>`;
+    const base = client.from('students').select('id,name,phone,season,plan_amount,paid_amount').order('id',{ascending:false});
+    const { data, error } = filter ? await base.or(`name.ilike.%${filter}%,phone.ilike.%${filter}%`) : await base;
+    if(error){ tbody.innerHTML = `<tr><td class="px-4 py-4 text-rose-300" colspan="7">${error.message}</td></tr>`; return; }
+    const rows = (data||[]).map(s=>({...s, remaining:Number(s.plan_amount)-Number(s.paid_amount)}));
+    if(!rows.length){ tbody.innerHTML = `<tr><td class="px-4 py-6 text-slate-400" colspan="7">لا يوجد طلاب</td></tr>`; return; }
+    tbody.innerHTML='';
+    rows.forEach(r=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML=`
+        <td class="px-4 py-3 border-b border-white/10 font-medium">${r.name}</td>
+        <td class="px-4 py-3 border-b border-white/10 text-slate-300">${r.phone||''}</td>
+        <td class="px-4 py-3 border-b border-white/10 text-emerald-300">${money(r.plan_amount)}</td>
+        <td class="px-4 py-3 border-b border-white/10 text-sky-300">${money(r.paid_amount)}</td>
+        <td class="px-4 py-3 border-b border-white/10 ${r.remaining>0?'text-amber-300':'text-emerald-300'}">${money(r.remaining)}</td>
+        <td class="px-4 py-3 border-b border-white/10 text-slate-300">${seasonName(r.season)}</td>
+        <td class="px-4 py-3 border-b border-white/10 text-left">
+          <div class="flex gap-2 justify-end">
+            <button class="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-white" data-pay="${r.id}" data-name="${r.name}">دفعة</button>
+            <button class="px-3 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-white" data-edit="${r.id}">تعديل</button>
+            <button class="px-3 py-1.5 rounded-lg bg-rose-500 hover:bg-rose-400 text-white" data-del="${r.id}">حذف</button>
+          </div>
+        </td>`;
+      tbody.appendChild(tr);
     });
-    zone.addEventListener('dragover', ev=>{ ev.preventDefault(); col.classList.add('drop-ok'); });
-    zone.addEventListener('dragleave', ()=> col.classList.remove('drop-ok'));
-    zone.addEventListener('drop', async ev=>{ ev.preventDefault(); col.classList.remove('drop-ok'); const studentId=Number(ev.dataTransfer.getData('text/plain')); await assignStudent(studentId, c.id); });
-
-    if(c.id!==null){
-      col.querySelector('[data-col-edit]').onclick = ()=> handleEditSlot(Number(c.id));
-      col.querySelector('[data-col-del]').onclick  = ()=> handleDeleteSlot(Number(c.id));
-      col.querySelector('[data-col-remind]').onclick  = ()=> openReminder(Number(c.id));
-    }
-    board.appendChild(col);
-  });
-}
-
-async function assignStudent(studentId, slotIdOrNull){
-  const { data:{ user } } = await client.auth.getUser();
-
-  if(slotIdOrNull==null){
-    const { error } = await client.from('student_slots').delete().eq('student_id', studentId);
-    if(error) return alert(error.message);
-    toast('أُزيل من المجموعة');
-  } else {
-    const slotId=Number(slotIdOrNull);
-    const capRes = await client.from('slots').select('capacity').eq('id', slotId).maybeSingle();
-    if (!capRes?.data) {
-      alert('الوقت غير موجود (ربما انحذف). سيتم تحديث اللوحة.');
-      await refreshBoard(); await refreshSlots();
-      return;
-    }
-    const cap = capRes.data.capacity ?? 0;
-    const occRes = await client.from('student_slots').select('id',{head:true,count:'exact'}).eq('slot_id', slotId);
-    const occ = occRes.count ?? 0;
-
-    if(occ >= cap){
-      alert('السعة ممتلئة في هذا الوقت. اختر وقت آخر.');
-      return;
-    }
-    const { error } = await client.from('student_slots').upsert([{ student_id: studentId, slot_id: slotId, created_by: user.id }], { onConflict:'student_id' });
-    if(error) return alert(error.message); toast('نُقل الطالب');
+    tbody.querySelectorAll('[data-edit]').forEach(b=> b.onclick = async ()=>{
+      const id=Number(b.dataset.edit);
+      const { data, error } = await client.from('students').select('*').eq('id', id).single();
+      if(error) return alert(error.message); sFormSet(data); window.scrollTo({top:0,behavior:'smooth'}); showTab('students');
+    });
+    tbody.querySelectorAll('[data-del]').forEach(b=> b.onclick = async ()=>{
+      const id=Number(b.dataset.del); if(!confirm('حذف الطالب؟')) return;
+      const { error } = await client.from('students').delete().eq('id', id);
+      if(error) return alert(error.message); toast('تم الحذف'); await loadStudents($('#qStudents').value.trim()); await refreshBoard();
+    });
+    tbody.querySelectorAll('[data-pay]').forEach(b=> b.onclick = ()=> openPayment(Number(b.dataset.pay), b.dataset.name));
   }
-  await refreshBoard(); await refreshSlots();
-}
+  $('#qStudents').oninput = ()=>{ const q=$('#qStudents'); clearTimeout(q._t); q._t=setTimeout(()=>loadStudents(q.value.trim()), 220); };
+  $('#export-csv').onclick = async ()=>{
+    const { data } = await client.from('students').select('*').order('id',{ascending:true});
+    const headers = data?.[0]? Object.keys(data[0]) : [];
+    const esc = v=>`"${String(v??'').replace(/"/g,'""')}"`;
+    const csv = [headers.join(',')].concat((data||[]).map(r=>headers.map(h=>esc(r[h])).join(','))).join('\n');
+    const blob = new Blob([csv],{type:'text/csv;charset=utf-8;'}); const url = URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download=`students_${Date.now()}.csv`; a.click(); URL.revokeObjectURL(url);
+    toast('تم تصدير CSV');
+  };
 
-/* ===== الحضور ===== */
-const attDate = $('#att-date'), attSlot = $('#att-slot'), attBody = $('#att-body');
-function jsWeekday(dateStr){ const [y,m,d]=dateStr.split('-').map(Number); const localNoon=new Date(y,m-1,d,12,0,0,0); return localNoon.getDay(); }
-async function fillAttSlots(){
-  attSlot.innerHTML = '<option value="">اختر وقت</option>'; if(!attDate.value) return;
-  const wd = jsWeekday(attDate.value);
-  const { data, error } = await client.from('slots').select('id,title,start_time,end_time').eq('weekday', wd).order('start_time');
-  if (error){ attSlot.innerHTML = `<option value="">${error.message}</option>`; return; }
-  if (!data?.length){ attSlot.innerHTML = '<option value="">لا توجد أوقات لهذا اليوم</option>'; return; }
-  attSlot.innerHTML = '<option value="">اختر وقت</option>' + data.map(sl=>`<option value="${sl.id}">${sl.title} • ${fmtHM(sl.start_time)}–${fmtHM(sl.end_time)}</option>`).join('');
-  if (data.length === 1) attSlot.value = String(data[0].id);
-}
-attDate.onchange = fillAttSlots;
+  /* ===== Modal: Payments ===== */
+  const payModal = $('#pay-modal'), payForm = $('#pay-form'), payList = $('#pay-list'), payInfo = $('#pay-info');
+  $('#pay-close').onclick = ()=> payModal.classList.remove('show');
 
-/* ===== تذكير (واتساب/SMS + تنبيه متصفح) ===== */
-const remModal = $('#rem-modal'), remText = $('#rem-text'), remLinks = $('#rem-links');
-const remTodayOnly = $('#rem-today-only'), remDayNote = $('#rem-day-note');
-function closeRem(){ remModal.classList.remove('show'); }
-$('#rem-close').onclick = closeRem;
-$('#rem-close-bottom').onclick = closeRem;
-$('#rem-x').onclick = closeRem;
-
-$('#att-load').onclick = async ()=>{
-  if(!attDate.value || !attSlot.value){ return alert('اختر تاريخ ووقت'); }
-  const slot_id = Number(attSlot.value);
-  const { data: ss } = await client.from('student_slots').select('student_id').eq('slot_id', slot_id);
-  const ids = (ss||[]).map(x=>x.student_id);
-  if(!ids.length){ attBody.innerHTML = `<tr><td class="px-4 py-4 text-slate-400" colspan="4">لا يوجد طلاب في هذا الوقت</td></tr>`; return; }
-
-  const { data: students } = await client.from('students').select('id,name,phone').in('id', ids).order('name');
-  const { data: curr } = await client.from('attendance').select('student_id,status,note').eq('slot_id', slot_id).eq('day', attDate.value);
-  const currMap = new Map((curr||[]).map(a=>[a.student_id, {status:a.status, note:a.note}]));
-
-  attBody.innerHTML = '';
-  (students||[]).forEach(s=>{
-    const st = currMap.get(s.id)?.status || 'present';
-    const note = currMap.get(s.id)?.note || '';
-    const tr=document.createElement('tr');
-    tr.innerHTML = `
-      <td class="px-4 py-3 border-b border-white/10 font-medium">${s.name}</td>
-      <td class="px-4 py-3 border-b border-white/10 text-slate-300">${s.phone||''}</td>
-      <td class="px-4 py-3 border-b border-white/10">
-        <select class="rounded-lg bg-white/5 border border-white/10 px-2 py-1" data-st="${s.id}">
-          <option value="present" ${st==='present'?'selected':''}>حاضر</option>
-          <option value="absent" ${st==='absent'?'selected':''}>غايب</option>
-          <option value="excused" ${st==='excused'?'selected':''}>معذور</option>
-        </select>
-      </td>
-      <td class="px-4 py-3 border-b border-white/10"><input class="w-full rounded-lg bg-white/5 border border-white/10 px-2 py-1" data-note="${s.id}" value="${note||''}"></td>
-    `;
-    attBody.appendChild(tr);
-  });
-};
-
-$('#att-save').onclick = async ()=>{
-  if(!attDate.value || !attSlot.value){ return alert('اختر تاريخ ووقت'); }
-  const slot_id = Number(attSlot.value), day = attDate.value;
-  const rows=[];
-  attBody.querySelectorAll('select[data-st]').forEach(sel=>{
-    const student_id = Number(sel.getAttribute('data-st'));
-    const status = sel.value;
-    const note = attBody.querySelector(`input[data-note="${student_id}"]`)?.value || null;
-    rows.push({ slot_id, student_id, day, status, note });
-  });
-  if(!rows.length) return;
-  const { data:{ user } } = await client.auth.getUser();
-  rows.forEach(r=> r.created_by = user.id);
-  const { error } = await client.from('attendance').upsert(rows, { onConflict:'slot_id,student_id,day' });
-  if (error) return alert(error.message);
-  toast('انحفظ الحضور');
-};
-
-function buildReminderText(sl){
-  const next = nextDateForWeekday(sl.weekday);
-  const d = next.toLocaleDateString('ar-IQ', { weekday:'long', year:'numeric', month:'numeric', day:'numeric' });
-  return `تذكير بمحاضرة ${sl.title} يوم ${d} الساعة ${fmtHM(sl.start_time)} – يرجى الالتزام بالوقت.`;
-}
-function openReminder(slotId){
-  const sl = cache.slots.find(s=>s.id===slotId);
-  if(!sl){ alert('هذا الوقت غير موجود'); return; }
-  // احفظ الـ slotId على المودال
-  remModal.dataset.slotId = String(slotId);
-
-  const students = cache.assigns
-    .filter(a=>a.slot_id===slotId)
-    .map(a=> cache.students.find(s=>s.id===a.student_id))
-    .filter(Boolean);
-
-  remText.value = buildReminderText(sl);
-
-  // ملاحظة اليوم/ليس اليوم
-  const isToday = (new Date().getDay() === sl.weekday);
-  remDayNote.textContent = isToday
-    ? `هذا الوقت هو اليوم (${wdName(sl.weekday)}).`
-    : `هذا الوقت ليس اليوم (${wdName(sl.weekday)}). خيار "اليوم فقط" سيمنع الإرسال.`;
-
-  // بناء الروابط — لهذا الوقت فقط + أرقام صحيحة
-  remLinks.innerHTML='';
-  students.forEach(st=>{
-    const ph = normalizeIQ(st.phone||'');
-    if(!ph) return; // تجاهل بدون رقم
-    const wa = `https://wa.me/${ph}?text=${encodeURIComponent(remText.value)}`;
-    const sms = `sms:${ph}?&body=${encodeURIComponent(remText.value)}`;
-    const row = document.createElement('div');
-    row.className='flex items-center gap-2 text-sm';
-    row.innerHTML = `<span class="text-slate-300 mr-auto">${st.name} — ${st.phone||''}</span>
-      <a data-wa href="${wa}" target="_blank" class="px-2 py-1 rounded bg-sky-600/80 hover:bg-sky-500 text-white">واتساب</a>
-      <a href="${sms}" class="px-2 py-1 rounded bg-emerald-600/80 hover:bg-emerald-500 text-white">SMS</a>`;
-    remLinks.appendChild(row);
-  });
-
-  remModal.classList.add('show');
-}
-
-$('#rem-copy').onclick = ()=> { remText.select(); document.execCommand('copy'); toast('اننسخ النص'); };
-$('#rem-open-all-wa').onclick = ()=> {
-  const links = Array.from(remLinks.querySelectorAll('a[data-wa]'));
-  if(!links.length) return alert('لا روابط واتساب متاحة (تأكد من وجود أرقام).');
-
-  // فلتر "اليوم فقط"
-  const slotId = Number(remModal.dataset.slotId || 0);
-  const sl = cache.slots.find(s=>s.id===slotId);
-  if (!sl) return alert('الوقت غير موجود.');
-  if (remTodayOnly.checked && (new Date().getDay() !== sl.weekday)) {
-    alert('هذا الوقت ليس اليوم و"اليوم فقط" مفعّل — لن يتم الإرسال.');
-    return;
+  function openPayment(studentId, name){
+    payForm.reset();
+    payForm.elements.student_id.value = studentId;
+    $('#pay-student-name').textContent = name;
+    const dt = new Date();
+    payForm.elements.paid_at.value = new Date(dt.getTime()-dt.getTimezoneOffset()*60000).toISOString().slice(0,16);
+    payInfo.textContent = '';
+    payModal.classList.add('show');
+    loadPayments(studentId);
   }
-
-  // فتح الروابط بالتدريج
-  links.forEach((a,i)=> setTimeout(()=>window.open(a.href,'_blank'), i*300));
-};
-
-/* ===== توزيع تلقائي (بدون انتظار) ===== */
-const autoBtn = document.getElementById('auto-distribute');
-autoBtn.onclick = autoDistribute;
-
-async function autoDistribute(){
-  autoBtn.disabled = true;
-  try{
-    await loadBoardData();
-    const slots = cache.slots.filter(s => boardDayFilter==='all' || String(s.weekday)===String(boardDayFilter));
-    if (!slots.length) return alert('لا توجد أوقات ضمن الفلتر الحالي');
-
-    const assignedSet = new Set(cache.assigns.map(a=>a.student_id));
-    const unassigned = cache.students.filter(s=>!assignedSet.has(s.id));
-    if (!unassigned.length) return alert('لا يوجد طلاب غير موزعين');
-
-    const occBySlot = new Map();
-    cache.assigns.forEach(a => occBySlot.set(a.slot_id, (occBySlot.get(a.slot_id)||0)+1));
-    const buckets = slots.map(s => ({ slot_id: s.id, left: Math.max(0, s.capacity - (occBySlot.get(s.id)||0)) }))
-                         .filter(b => b.left > 0);
-    if (!buckets.length) return alert('كل الأوقات ممتلئة، لا يوجد مقاعد شاغرة');
-
-    if(!confirm(`سيتم توزيع ${unassigned.length} طالب على ${slots.length} وقت${boardDayFilter!=='all'?' (اليوم المحدد فقط)':''}. متابعة؟`)) return;
+  async function loadPayments(studentId){
+    payList.innerHTML = '<div class="text-slate-400">...</div>';
+    const { data, error } = await client.from('payments').select('id,amount,paid_at,method,note').eq('student_id', studentId).order('paid_at',{ascending:false}).limit(50);
+    if (error) { payList.innerHTML = `<div class="text-rose-300">${error.message}</div>`; return; }
+    if (!data?.length) { payList.innerHTML = `<div class="text-slate-400">لا توجد دفعات</div>`; return; }
+    payList.innerHTML = '';
+    data.forEach(p=>{
+      const div=document.createElement('div');
+      div.className='glass rounded-xl px-3 py-2 flex items-center gap-3';
+      const d = new Date(p.paid_at);
+      div.innerHTML = `
+        <div class="text-emerald-300 font-semibold">${money(p.amount)}</div>
+        <div class="text-slate-300 text-sm mr-auto">${d.toLocaleDateString('ar-IQ')} ${d.toLocaleTimeString('ar-IQ',{hour:'2-digit',minute:'2-digit'})}</div>
+        <div class="text-xs text-slate-400">${p.method||''}</div>
+        ${p.note?`<div class="text-xs text-slate-400">— ${p.note}</div>`:''}
+        <button class="px-2 py-1 text-xs rounded bg-rose-500 hover:bg-rose-400 text-white" data-delpay="${p.id}">حذف</button>
+      `;
+      payList.appendChild(div);
+    });
+    payList.querySelectorAll('[data-delpay]').forEach(b=> b.onclick = ()=> deletePayment(Number(b.dataset.delpay)));
+  }
+  async function deletePayment(id){
+    if(!confirm('حذف الدفعة؟')) return;
+    const { error } = await client.from('payments').delete().eq('id', id);
+    if (error) return alert(error.message);
+    toast('حُذفت الدفعة');
+    const sid = Number(payForm.elements.student_id.value);
+    await loadPayments(sid);
+    await loadStudents($('#qStudents').value.trim());
+  }
+  $('#pay-save').onclick = async (e)=>{
+    e.preventDefault();
+    const fd = new FormData(payForm);
+    const student_id = Number(fd.get('student_id'));
+    const amount = Number(fd.get('amount')||0);
+    const paid_at = fd.get('paid_at') ? new Date(fd.get('paid_at')).toISOString() : new Date().toISOString();
+    const method = fd.get('method') || null;
+    const note = (fd.get('note')||'').trim() || null;
+    if(!(student_id>0) || !(amount>0)) return alert('تحقق من الحقول');
 
     const { data:{ user } } = await client.auth.getUser();
-    const rows = [];
-    let idx = 0;
+    const { error } = await client.from('payments').insert({ student_id, amount, paid_at, method, note, created_by: user.id });
+    if (error) return alert(error.message);
 
-    while (idx < unassigned.length && buckets.some(b => b.left > 0)) {
-      for (let i = 0; i < buckets.length && idx < unassigned.length; i++) {
-        if (buckets[i].left > 0) {
-          rows.push({ student_id: unassigned[idx].id, slot_id: buckets[i].slot_id, created_by: user.id });
-          buckets[i].left--;
-          idx++;
+    const { data: st } = await client.from('students').select('plan_amount,paid_amount,name,phone,id').eq('id', student_id).single();
+    const remaining = (Number(st?.plan_amount||0) - Number(st?.paid_amount||0)).toFixed(2);
+    $('#pay-info').textContent = `المتبقي: ${money(remaining)} | الواصل: ${money(st?.paid_amount||0)}`;
+    if (String(sForm.elements.id.value||'') === String(student_id)) {
+      sFormSet({ id: st.id, name: st.name, phone: st.phone, plan_amount: st.plan_amount, paid_amount: st.paid_amount, season: st.season });
+    }
+    await loadPayments(student_id);
+    await loadStudents($('#qStudents').value.trim());
+    toast('انحفظت الدفعة ✔︎');
+  };
+
+  /* ===== الأوقات + تذكير ===== */
+  const slotForm = $('#slot-form'), slotsList=$('#slots-list');
+  function slotFormGet(){ const fd=new FormData(slotForm); return { id:fd.get('id')||null, title:(fd.get('title')||'').trim(), weekday:Number(fd.get('weekday')), start_time:fd.get('start_time'), end_time:fd.get('end_time'), capacity:Number(fd.get('capacity')||25) }; }
+  function slotFormSet(x){
+    slotForm.elements.id.value = x?.id || '';
+    slotForm.elements.title.value = x?.title || '';
+    slotForm.elements.weekday.value = x?.weekday ?? 0;
+    slotForm.elements.start_time.value = x?.start_time || '';
+    slotForm.elements.end_time.value = x?.end_time || '';
+    slotForm.elements.capacity.value = x?.capacity ?? 25;
+  }
+  $('#reset-slot').onclick = ()=> slotFormSet(null);
+
+  $('#save-slot').onclick = async (e)=>{
+    e.preventDefault();
+    const { data:{ user } } = await client.auth.getUser();
+    const v = slotFormGet();
+    if(!v.title) return alert('اكتب عنوان الوقت');
+    if(!v.start_time || !v.end_time) return alert('حدّد وقت البداية والنهاية');
+    if(v.capacity<=0) return alert('السعة يجب أن تكون موجبة');
+
+    if(!v.id){
+      const payload = { ...v, created_by: user.id }; delete payload.id;
+      const { error } = await client.from('slots').insert(payload);
+      if(error) return alert(error.message); toast('تمت إضافة الوقت');
+    } else {
+      const { data: oldSlot, error: oldErr } = await client.from('slots').select('weekday,start_time,end_time,capacity').eq('id', Number(v.id)).single();
+      if (oldErr) return alert(oldErr.message);
+      const timeChanged = (oldSlot.start_time!==v.start_time) || (oldSlot.end_time!==v.end_time);
+
+      const { count, error: cErr } = await client.from('student_slots').select('id',{head:true,count:'exact'}).eq('slot_id', Number(v.id));
+      if(!cErr && count > v.capacity) return alert(`السعة الجديدة (${v.capacity}) أقل من عدد الطلاب الحالي (${count}).`);
+
+      const { error } = await client.from('slots').update({ title:v.title, weekday:v.weekday, start_time:v.start_time, end_time:v.end_time, capacity:v.capacity }).eq('id', Number(v.id));
+      if(error) return alert(error.message);
+
+      if (timeChanged) {
+        const { error: delErr } = await client.from('student_slots').delete().eq('slot_id', Number(v.id));
+        if (delErr) console.warn('Delete assigns blocked (RLS?)', delErr.message);
+      }
+      toast('تم تحديث الوقت');
+    }
+    slotFormSet(null); await refreshSlots(); await refreshBoard();
+  };
+
+  $('#copy-slot').onclick = async (e)=>{
+    e.preventDefault();
+    const { data:{ user } } = await client.auth.getUser();
+    const v = slotFormGet();
+    if(!v.title || !v.start_time || !v.end_time) return alert('أكمل الحقول');
+    const payload = { title:v.title, weekday:v.weekday, start_time:v.start_time, end_time:v.end_time, capacity:v.capacity, created_by: user.id };
+    const { error } = await client.from('slots').insert(payload);
+    if (error) return alert(error.message);
+    toast('تم إنشاء وقت جديد (نسخة)'); await refreshSlots(); await refreshBoard();
+  };
+
+  $('#clone-week').onclick = async ()=>{
+    const { data:{ user } } = await client.auth.getUser();
+    const { data: slots } = await client.from('slots').select('title,weekday,start_time,end_time,capacity').order('weekday');
+    if(!slots?.length) return alert('لا يوجد أوقات لاستنساخها');
+    const rows = slots.map(s=>({ ...s, title: `${s.title} (نسخة)`, created_by: user.id }));
+    const { error } = await client.from('slots').insert(rows);
+    if (error) return alert(error.message);
+    toast(`تم استنساخ ${rows.length} وقت`);
+    await refreshSlots(); await refreshBoard();
+  };
+
+  async function refreshSlots(){
+    const { data: slots, error: slotErr } = await client.from('slots').select('id,title,weekday,start_time,end_time,capacity').order('weekday', { ascending: true });
+    if (slotErr){ slotsList.innerHTML = `<div class="text-rose-300">${slotErr.message}</div>`; return; }
+
+    const { data: ss } = await client.from('student_slots').select('slot_id');
+    const countMap = {};
+    (ss||[]).forEach(r=>{ countMap[r.slot_id]=(countMap[r.slot_id]||0)+1; });
+
+    slotsList.innerHTML='';
+    (slots||[]).forEach(sl=>{
+      const filled=countMap[sl.id]||0;
+      const full = filled>=sl.capacity;
+      const card=document.createElement('div');
+      card.className='glass rounded-xl p-3 flex items-center gap-3';
+      card.innerHTML=`
+        <div class="w-12 h-12 grid place-content-center rounded-xl ${full?'bg-rose-500/20 border-rose-400/30':'bg-emerald-500/20 border-emerald-400/30'} border">
+          <span class="text-sm font-bold ${full?'text-rose-300':'text-emerald-300'}">${filled}/${sl.capacity}</span>
+        </div>
+        <div class="mr-auto">
+          <div class="font-semibold">${sl.title} <span class="text-xs text-slate-400">(#${sl.id})</span></div>
+          <div class="text-slate-400 text-xs">${wdName(sl.weekday)} • ${fmtHM(sl.start_time)}–${fmtHM(sl.end_time)}</div>
+        </div>
+        <div class="flex gap-2">
+          <button class="px-3 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-white" data-edit-slot="${sl.id}">تعديل</button>
+          <button class="px-3 py-1.5 rounded-lg bg-rose-500 hover:bg-rose-400 text-white" data-del-slot="${sl.id}">حذف</button>
+          <button class="px-3 py-1.5 rounded-lg bg-indigo-500 hover:bg-indigo-400 text-white" title="تذكير" data-rem="${sl.id}">🔔</button>
+        </div>`;
+      slotsList.appendChild(card);
+    });
+    slotsList.querySelectorAll('[data-edit-slot]').forEach(b=> b.onclick = ()=> handleEditSlot(Number(b.dataset.editSlot)));
+    slotsList.querySelectorAll('[data-del-slot]').forEach(b=> b.onclick = ()=> handleDeleteSlot(Number(b.dataset.delSlot)));
+    slotsList.querySelectorAll('[data-rem]').forEach(b=> b.onclick = ()=> openReminder(Number(b.dataset.rem)));
+    $('#slot-hint').textContent = `غير موزّعين: ${await getUnassignedCount()}`;
+  }
+
+  async function handleEditSlot(id){
+    const { data, error } = await client.from('slots').select('*').eq('id', id).single();
+    if(error) return alert(error.message);
+    slotFormSet(data); window.scrollTo({ top: 0, behavior: 'smooth' }); showTab('schedule');
+  }
+  async function handleDeleteSlot(id){
+    const { count } = await client.from('student_slots').select('id', { head:true, count:'exact' }).eq('slot_id', id);
+    if(!confirm(`تأكيد الحذف؟${count?'\nتنبيه: يوجد '+count+' طالب مرتبط':''}`)) return;
+    const { error } = await client.from('slots').delete().eq('id', id);
+    if(error) return alert(error.message);
+    toast('تم حذف الوقت'); await refreshSlots(); await refreshBoard();
+  }
+  async function getUnassignedCount(){
+    const { data: stu } = await client.from('students').select('id');
+    const { data: ss }  = await client.from('student_slots').select('student_id');
+    const assigned = new Set((ss||[]).map(x=>x.student_id));
+    return (stu||[]).filter(s=>!assigned.has(s.id)).length;
+  }
+
+  /* ===== لوحة السحب/الإفلات ===== */
+  const board = $('#board'); let cache = { students:[], slots:[], assigns:[] };
+  const boardSearch=$('#qBoard'); const dayFilterEl = $('#dayFilter'); let boardDayFilter = 'all';
+  dayFilterEl.onchange = ()=>{ boardDayFilter = dayFilterEl.value; renderBoard(boardSearch.value); };
+  boardSearch.oninput = ()=>{ clearTimeout(boardSearch._t); boardSearch._t=setTimeout(()=>renderBoard(boardSearch.value), 200); };
+
+  async function loadBoardData(){
+    const [ S, SL, SS ] = await Promise.all([
+      client.from('students').select('id,name,phone').order('id',{ascending:false}),
+      client.from('slots').select('id,title,weekday,start_time,end_time,capacity').order('weekday',{ascending:true}),
+      client.from('student_slots').select('student_id,slot_id')
+    ]);
+    if (S.error)  console.error('students load error:', S.error?.message);
+    if (SL.error) console.error('slots load error:', SL.error?.message);
+    if (SS.error) console.error('student_slots load error:', SS.error?.message);
+    cache.students = Array.isArray(S.data)  ? S.data  : [];
+    cache.slots    = Array.isArray(SL.data) ? SL.data : [];
+    cache.assigns  = Array.isArray(SS.data) ? SS.data : [];
+  }
+
+  function renderBoard(filter=''){
+    const q=(filter||'').trim().toLowerCase();
+    const mapAssign=new Map(cache.assigns.map(a=>[a.student_id,a.slot_id]));
+    const cols=[{id:null,title:'غير موزّع',desc:'طلاب بلا وقت محدد',capacity:Infinity}];
+    cache.slots.filter(sl => boardDayFilter==='all' || String(sl.weekday)===String(boardDayFilter))
+      .forEach(sl=> cols.push({ id:sl.id, title:`${sl.title}  (#${sl.id})`, desc:`${wdName(sl.weekday)} • ${fmtHM(sl.start_time)}–${fmtHM(sl.end_time)} • سعة ${sl.capacity}`, capacity:sl.capacity }));
+
+    const groups=new Map(cols.map(c=>[String(c.id),[]]));
+    cache.students.forEach(s=>{
+      if(q && !(s.name?.toLowerCase().includes(q) || (s.phone||'').includes(q))) return;
+      const sid = mapAssign.get(s.id) ?? null; const key = groups.has(String(sid)) ? String(sid) : 'null';
+      groups.get(key).push(s);
+    });
+
+    board.innerHTML='';
+    cols.forEach(c=>{
+      const g=groups.get(String(c.id))||[];
+      const col=document.createElement('div'); col.className='rounded-xl bg-white/5 border border-white/10 p-3'; col.dataset.slotId=c.id??'';
+      col.innerHTML=`
+        <div class="flex items-center gap-2 mb-2">
+          <div class="font-semibold">${c.title}</div>
+          <div class="text-xs text-slate-400 mr-auto">${c.desc||''}</div>
+          <span class="text-xs rounded-full px-2 py-0.5 bg-white/10 border border-white/10">${g.length}${isFinite(c.capacity)?'/'+c.capacity:''}</span>
+          ${ c.id!==null ? `
+            <button class="ml-2 px-2 py-1 text-xs rounded bg-indigo-500 hover:bg-indigo-400 text-white" data-col-remind="${c.id}">🔔</button>
+            <button class="px-2 py-1 text-xs rounded bg-sky-500 hover:bg-sky-400 text-white" data-col-edit="${c.id}">تعديل</button>
+            <button class="px-2 py-1 text-xs rounded bg-rose-500 hover:bg-rose-400 text-white" data-col-del="${c.id}">حذف</button>` : '' }
+        </div>
+        <div class="min-h-[80px] space-y-2" data-dropzone></div>`;
+      const zone=col.querySelector('[data-dropzone]');
+      g.forEach(s=>{
+        const card=document.createElement('div'); card.className='glass rounded-lg px-3 py-2 cursor-move'; card.draggable=true; card.dataset.studentId=s.id;
+        card.innerHTML=`<div class="font-medium">${s.name}</div><div class="text-xs text-slate-400">${s.phone||''}</div>`;
+        card.addEventListener('dragstart', ev=>{ card.classList.add('dragging'); ev.dataTransfer.setData('text/plain', String(s.id)); });
+        card.addEventListener('dragend', ()=> card.classList.remove('dragging')); zone.appendChild(card);
+      });
+      zone.addEventListener('dragover', ev=>{ ev.preventDefault(); col.classList.add('drop-ok'); });
+      zone.addEventListener('dragleave', ()=> col.classList.remove('drop-ok'));
+      zone.addEventListener('drop', async ev=>{ ev.preventDefault(); col.classList.remove('drop-ok'); const studentId=Number(ev.dataTransfer.getData('text/plain')); await assignStudent(studentId, c.id); });
+
+      if(c.id!==null){
+        col.querySelector('[data-col-edit]').onclick = ()=> handleEditSlot(Number(c.id));
+        col.querySelector('[data-col-del]').onclick  = ()=> handleDeleteSlot(Number(c.id));
+        col.querySelector('[data-col-remind]').onclick  = ()=> openReminder(Number(c.id));
+      }
+      board.appendChild(col);
+    });
+  }
+
+  async function assignStudent(studentId, slotIdOrNull){
+    const { data:{ user } } = await client.auth.getUser();
+
+    if(slotIdOrNull==null){
+      const { error } = await client.from('student_slots').delete().eq('student_id', studentId);
+      if(error) return alert(error.message);
+      toast('أُزيل من المجموعة');
+    } else {
+      const slotId=Number(slotIdOrNull);
+      const capRes = await client.from('slots').select('capacity').eq('id', slotId).maybeSingle();
+      if (!capRes?.data) {
+        alert('الوقت غير موجود (ربما انحذف). سيتم تحديث اللوحة.');
+        await refreshBoard(); await refreshSlots();
+        return;
+      }
+      const cap = capRes.data.capacity ?? 0;
+      const occRes = await client.from('student_slots').select('id',{head:true,count:'exact'}).eq('slot_id', slotId);
+      const occ = occRes.count ?? 0;
+
+      if(occ >= cap){
+        alert('السعة ممتلئة في هذا الوقت. اختر وقت آخر.');
+        return;
+      }
+      const { error } = await client.from('student_slots').upsert([{ student_id: studentId, slot_id: slotId, created_by: user.id }], { onConflict:'student_id' });
+      if(error) return alert(error.message); toast('نُقل الطالب');
+    }
+    await refreshBoard(); await refreshSlots();
+  }
+
+  /* ===== الحضور ===== */
+  const attDate = $('#att-date'), attSlot = $('#att-slot'), attBody = $('#att-body');
+  function jsWeekday(dateStr){ const [y,m,d]=dateStr.split('-').map(Number); const localNoon=new Date(y,m-1,d,12,0,0,0); return localNoon.getDay(); }
+  async function fillAttSlots(){
+    attSlot.innerHTML = '<option value="">اختر وقت</option>'; if(!attDate.value) return;
+    const wd = jsWeekday(attDate.value);
+    const { data, error } = await client.from('slots').select('id,title,start_time,end_time').eq('weekday', wd).order('start_time');
+    if (error){ attSlot.innerHTML = `<option value="">${error.message}</option>`; return; }
+    if (!data?.length){ attSlot.innerHTML = '<option value="">لا توجد أوقات لهذا اليوم</option>'; return; }
+    attSlot.innerHTML = '<option value="">اختر وقت</option>' + data.map(sl=>`<option value="${sl.id}">${sl.title} • ${fmtHM(sl.start_time)}–${fmtHM(sl.end_time)}</option>`).join('');
+    if (data.length === 1) attSlot.value = String(data[0].id);
+  }
+  attDate.onchange = fillAttSlots;
+
+  /* ===== تذكير (واتساب/SMS + تنبيه متصفح) ===== */
+  const remModal = $('#rem-modal'), remText = $('#rem-text'), remLinks = $('#rem-links');
+  const remTodayOnly = $('#rem-today-only'), remDayNote = $('#rem-day-note');
+  function closeRem(){ remModal.classList.remove('show'); }
+  $('#rem-close').onclick = closeRem;
+  $('#rem-close-bottom').onclick = closeRem;
+  $('#rem-x').onclick = closeRem;
+
+  $('#att-load').onclick = async ()=>{
+    if(!attDate.value || !attSlot.value){ return alert('اختر تاريخ ووقت'); }
+    const slot_id = Number(attSlot.value);
+    const { data: ss } = await client.from('student_slots').select('student_id').eq('slot_id', slot_id);
+    const ids = (ss||[]).map(x=>x.student_id);
+    if(!ids.length){ attBody.innerHTML = `<tr><td class="px-4 py-4 text-slate-400" colspan="4">لا يوجد طلاب في هذا الوقت</td></tr>`; return; }
+
+    const { data: students } = await client.from('students').select('id,name,phone').in('id', ids).order('name');
+    const { data: curr } = await client.from('attendance').select('student_id,status,note').eq('slot_id', slot_id).eq('day', attDate.value);
+    const currMap = new Map((curr||[]).map(a=>[a.student_id, {status:a.status, note:a.note}]));
+
+    attBody.innerHTML = '';
+    (students||[]).forEach(s=>{
+      const st = currMap.get(s.id)?.status || 'present';
+      const note = currMap.get(s.id)?.note || '';
+      const tr=document.createElement('tr');
+      tr.innerHTML = `
+        <td class="px-4 py-3 border-b border-white/10 font-medium">${s.name}</td>
+        <td class="px-4 py-3 border-b border-white/10 text-slate-300">${s.phone||''}</td>
+        <td class="px-4 py-3 border-b border-white/10">
+          <select class="rounded-lg bg-white/5 border border-white/10 px-2 py-1" data-st="${s.id}">
+            <option value="present" ${st==='present'?'selected':''}>حاضر</option>
+            <option value="absent" ${st==='absent'?'selected':''}>غايب</option>
+            <option value="excused" ${st==='excused'?'selected':''}>معذور</option>
+          </select>
+        </td>
+        <td class="px-4 py-3 border-b border-white/10"><input class="w-full rounded-lg bg-white/5 border border-white/10 px-2 py-1" data-note="${s.id}" value="${note||''}"></td>
+      `;
+      attBody.appendChild(tr);
+    });
+  };
+
+  $('#att-save').onclick = async ()=>{
+    if(!attDate.value || !attSlot.value){ return alert('اختر تاريخ ووقت'); }
+    const slot_id = Number(attSlot.value), day = attDate.value;
+    const rows=[];
+    attBody.querySelectorAll('select[data-st]').forEach(sel=>{
+      const student_id = Number(sel.getAttribute('data-st'));
+      const status = sel.value;
+      const note = attBody.querySelector(`input[data-note="${student_id}"]`)?.value || null;
+      rows.push({ slot_id, student_id, day, status, note });
+    });
+    if(!rows.length) return;
+    const { data:{ user } } = await client.auth.getUser();
+    rows.forEach(r=> r.created_by = user.id);
+    const { error } = await client.from('attendance').upsert(rows, { onConflict:'slot_id,student_id,day' });
+    if (error) return alert(error.message);
+    toast('انحفظ الحضور');
+  };
+
+  function buildReminderText(sl){
+    const next = nextDateForWeekday(sl.weekday);
+    const d = next.toLocaleDateString('ar-IQ', { weekday:'long', year:'numeric', month:'numeric', day:'numeric' });
+    return `تذكير بمحاضرة ${sl.title} يوم ${d} الساعة ${fmtHM(sl.start_time)} – يرجى الالتزام بالوقت.`;
+  }
+  function openReminder(slotId){
+    const sl = cache.slots.find(s=>s.id===slotId);
+    if(!sl){ alert('هذا الوقت غير موجود'); return; }
+    remModal.dataset.slotId = String(slotId);
+
+    const students = cache.assigns
+      .filter(a=>a.slot_id===slotId)
+      .map(a=> cache.students.find(s=>s.id===a.student_id))
+      .filter(Boolean);
+
+    remText.value = buildReminderText(sl);
+
+    const isToday = (new Date().getDay() === sl.weekday);
+    remDayNote.textContent = isToday
+      ? `هذا الوقت هو اليوم (${wdName(sl.weekday)}).`
+      : `هذا الوقت ليس اليوم (${wdName(sl.weekday)}). خيار "اليوم فقط" سيمنع الإرسال.`;
+
+    remLinks.innerHTML='';
+    students.forEach(st=>{
+      const ph = normalizeIQ(st.phone||'');
+      if(!ph) return;
+      const wa = `https://wa.me/${ph}?text=${encodeURIComponent(remText.value)}`;
+      const sms = `sms:${ph}?&body=${encodeURIComponent(remText.value)}`;
+      const row = document.createElement('div');
+      row.className='flex items-center gap-2 text-sm';
+      row.innerHTML = `<span class="text-slate-300 mr-auto">${st.name} — ${st.phone||''}</span>
+        <a data-wa href="${wa}" target="_blank" class="px-2 py-1 rounded bg-sky-600/80 hover:bg-sky-500 text-white">واتساب</a>
+        <a href="${sms}" class="px-2 py-1 rounded bg-emerald-600/80 hover:bg-emerald-500 text-white">SMS</a>`;
+      remLinks.appendChild(row);
+    });
+
+    remModal.classList.add('show');
+  }
+
+  $('#rem-copy').onclick = ()=> { remText.select(); document.execCommand('copy'); toast('اننسخ النص'); };
+  $('#rem-open-all-wa').onclick = ()=> {
+    const links = Array.from(remLinks.querySelectorAll('a[data-wa]'));
+    if(!links.length) return alert('لا روابط واتساب متاحة (تأكد من وجود أرقام).');
+
+    const slotId = Number(remModal.dataset.slotId || 0);
+    const sl = cache.slots.find(s=>s.id===slotId);
+    if (!sl) return alert('الوقت غير موجود.');
+    if (remTodayOnly.checked && (new Date().getDay() !== sl.weekday)) {
+      alert('هذا الوقت ليس اليوم و"اليوم فقط" مفعّل — لن يتم الإرسال.');
+      return;
+    }
+    links.forEach((a,i)=> setTimeout(()=>window.open(a.href,'_blank'), i*300));
+  };
+
+  /* ===== توزيع تلقائي ===== */
+  const autoBtn = document.getElementById('auto-distribute');
+  autoBtn.onclick = autoDistribute;
+
+  async function autoDistribute(){
+    autoBtn.disabled = true;
+    try{
+      await loadBoardData();
+      const slots = cache.slots.filter(s => boardDayFilter==='all' || String(s.weekday)===String(boardDayFilter));
+      if (!slots.length) return alert('لا توجد أوقات ضمن الفلتر الحالي');
+
+      const assignedSet = new Set(cache.assigns.map(a=>a.student_id));
+      const unassigned = cache.students.filter(s=>!assignedSet.has(s.id));
+      if (!unassigned.length) return alert('لا يوجد طلاب غير موزعين');
+
+      const occBySlot = new Map();
+      cache.assigns.forEach(a => occBySlot.set(a.slot_id, (occBySlot.get(a.slot_id)||0)+1));
+      const buckets = slots.map(s => ({ slot_id: s.id, left: Math.max(0, s.capacity - (occBySlot.get(s.id)||0)) }))
+                           .filter(b => b.left > 0);
+      if (!buckets.length) return alert('كل الأوقات ممتلئة، لا يوجد مقاعد شاغرة');
+
+      if(!confirm(`سيتم توزيع ${unassigned.length} طالب على ${slots.length} وقت${boardDayFilter!=='all'?' (اليوم المحدد فقط)':''}. متابعة؟`)) return;
+
+      const { data:{ user } } = await client.auth.getUser();
+      const rows = [];
+      let idx = 0;
+
+      while (idx < unassigned.length && buckets.some(b => b.left > 0)) {
+        for (let i = 0; i < buckets.length && idx < unassigned.length; i++) {
+          if (buckets[i].left > 0) {
+            rows.push({ student_id: unassigned[idx].id, slot_id: buckets[i].slot_id, created_by: user.id });
+            buckets[i].left--;
+            idx++;
+          }
         }
       }
-    }
 
-    if (rows.length) {
-      const { error } = await client.from('student_slots').upsert(rows, { onConflict: 'student_id' });
-      if (error) return alert(error.message);
-    }
-
-    const leftover = unassigned.length - rows.length;
-    toast(`تم توزيع ${rows.length} طالب${leftover>0?` — ${leftover} بدون مكان (كل الأوقات ممتلئة)`:''}`);
-    await refreshBoard();
-    await refreshSlots();
-  } finally {
-    autoBtn.disabled = false;
-  }
-}
-
-/* ===== Realtime ===== */
-let rtCh=null;
-function unsubscribeRT(){ if(rtCh){ client.removeChannel(rtCh); rtCh=null; } }
-async function subscribeRT() {
-  unsubscribeRT();
-  await ensureRealtimeAuth();
-  rtCh = client
-    .channel('sched', { config: { broadcast: { ack: true } } })
-    .on('postgres_changes', { event:'*', schema:'public', table:'students'      }, async ()=>{ await loadStudents($('#qStudents').value); await refreshBoard(); })
-    .on('postgres_changes', { event:'*', schema:'public', table:'slots'         }, async ()=>{ await refreshSlots(); await refreshBoard(); })
-    .on('postgres_changes', { event:'*', schema:'public', table:'student_slots' }, async ()=>{ await refreshSlots(); await refreshBoard(); })
-    .on('postgres_changes', { event:'*', schema:'public', table:'payments'      }, async ()=>{ await loadStudents($('#qStudents').value); })
-    .subscribe((status) => {
-      console.log('Realtime status:', status);
-      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-        setTimeout(subscribeRT, 1200);
+      if (rows.length) {
+        const { error } = await client.from('student_slots').upsert(rows, { onConflict: 'student_id' });
+        if (error) return alert(error.message);
       }
-    });
-  window.addEventListener('online', subscribeRT, { once:true });
-}
 
-/* ===== بناء/تحديث اللوحات ===== */
-async function refreshBoard(){ await loadBoardData(); renderBoard($('#qBoard').value); }
+      const leftover = unassigned.length - rows.length;
+      toast(`تم توزيع ${rows.length} طالب${leftover>0?` — ${leftover} بدون مكان (كل الأوقات ممتلئة)`:''}`);
+      await refreshBoard();
+      await refreshSlots();
+    } finally {
+      autoBtn.disabled = false;
+    }
+  }
 
-/* ===== تشغيل ===== */
-(function initDefaults(){
-  const dt = new Date();
-  const iso = new Date(dt.getTime()-dt.getTimezoneOffset()*60000).toISOString().slice(0,10);
-  $('#att-date').value = iso;
-})();
-(async ()=>{
-  const u = await guard(); if(!u) return;
-  await ensureRealtimeAuth();
-  await Promise.all([ loadStudents(), refreshSlots(), refreshBoard(), fillAttSlots() ]);
-  await subscribeRT();
-  if('Notification' in window && Notification.permission==='granted'){ scheduleLocalNotifsForToday(); }
-})();
-</script>
-<!-- زر تثبيت PWA -->
-<button id="pwa-install"
-  style="position:fixed;bottom:84px;left:50%;transform:translateX(-50%);
-         background:#10b981;color:#fff;border:0;border-radius:999px;
-         padding:10px 16px;font-weight:600;box-shadow:0 10px 25px rgba(16,185,129,.35);
-         display:none;z-index:70;">
-  ثبّت التطبيق
-</button>
+  /* ===== Realtime ===== */
+  let rtCh=null;
+  function unsubscribeRT(){ if(rtCh){ client.removeChannel(rtCh); rtCh=null; } }
+  async function subscribeRT() {
+    unsubscribeRT();
+    await ensureRealtimeAuth();
+    rtCh = client
+      .channel('sched', { config: { broadcast: { ack: true } } })
+      .on('postgres_changes', { event:'*', schema:'public', table:'students'      }, async ()=>{ await loadStudents($('#qStudents').value); await refreshBoard(); })
+      .on('postgres_changes', { event:'*', schema:'public', table:'slots'         }, async ()=>{ await refreshSlots(); await refreshBoard(); })
+      .on('postgres_changes', { event:'*', schema:'public', table:'student_slots' }, async ()=>{ await refreshSlots(); await refreshBoard(); })
+      .on('postgres_changes', { event:'*', schema:'public', table:'payments'      }, async ()=>{ await loadStudents($('#qStudents').value); })
+      .subscribe((status) => {
+        console.log('Realtime status:', status);
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          setTimeout(subscribeRT, 1200);
+        }
+      });
+    window.addEventListener('online', subscribeRT, { once:true });
+  }
 
-<!-- تنبيه iOS للتثبيت اليدوي -->
-<div id="ios-a2hs"
-     style="position:fixed;bottom:84px;left:50%;transform:translateX(-50%);
+  /* ===== بناء/تحديث اللوحات ===== */
+  async function refreshBoard(){ await loadBoardData(); renderBoard($('#qBoard').value); }
+
+  /* ===== تشغيل ===== */
+  (function initDefaults(){
+    const dt = new Date();
+    const iso = new Date(dt.getTime()-dt.getTimezoneOffset()*60000).toISOString().slice(0,10);
+    $('#att-date').value = iso;
+  })();
+  (async ()=>{
+    const u = await guard(); if(!u) return;
+    await ensureRealtimeAuth();
+    await Promise.all([ loadStudents(), refreshSlots(), refreshBoard(), fillAttSlots() ]);
+    await subscribeRT();
+    if('Notification' in window && Notification.permission==='granted'){ scheduleLocalNotifsForToday(); }
+  })();
+  </script>
+
+  <!-- زر تثبيت PWA -->
+  <button id="pwa-install"
+    style="position:fixed;bottom:84px;left:50%;transform:translateX(-50%);
+          background:#10b981;color:#fff;border:0;border-radius:999px;
+          padding:10px 16px;font-weight:600;box-shadow:0 10px 25px rgba(16,185,129,.35);
+          display:none;z-index:70;">
+    ثبّت التطبيق
+  </button>
+
+  <!-- تنبيه iOS للتثبيت اليدوي -->
+  <div id="ios-a2hs"
+      style="position:fixed;bottom:84px;left:50%;transform:translateX(-50%);
             background:#111827;color:#e5e7eb;border:1px solid #1f2937;border-radius:12px;
             padding:10px 12px;font-size:13px;display:none;z-index:69;">
-  على iPhone: افتح <b>Share</b> → اختر <b>Add to Home Screen</b>
-  <button id="ios-a2hs-close"
-          style="margin-right:10px;background:transparent;border:0;color:#9ca3af;">إخفاء</button>
-</div>
+    على iPhone: افتح <b>Share</b> → اختر <b>Add to Home Screen</b>
+    <button id="ios-a2hs-close"
+            style="margin-right:10px;background:transparent;border:0;color:#9ca3af;">إخفاء</button>
+  </div>
 
-<script>
-  // منطق زر التثبيت
-  let deferredPrompt = null;
-  const btn = document.getElementById('pwa-install');
-  const iosHint = document.getElementById('ios-a2hs');
-  const iosClose = document.getElementById('ios-a2hs-close');
+  <script>
+    // منطق زر التثبيت
+    let deferredPrompt = null;
+    const btn = document.getElementById('pwa-install');
+    const iosHint = document.getElementById('ios-a2hs');
+    const iosClose = document.getElementById('ios-a2hs-close');
 
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    btn.style.display = 'inline-block';
-  });
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      btn.style.display = 'inline-block';
+    });
 
-  btn.addEventListener('click', async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const choice = await deferredPrompt.userChoice;
-    deferredPrompt = null;
-    btn.style.display = 'none';
-    // لو تريد تتبع outcome: choice.outcome === 'accepted' | 'dismissed'
-  });
+    btn.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      const choice = await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      btn.style.display = 'none';
+    });
 
-  window.addEventListener('appinstalled', () => {
-    btn.style.display = 'none';
-  });
+    window.addEventListener('appinstalled', () => {
+      btn.style.display = 'none';
+    });
 
-  // iOS (ماكو beforeinstallprompt) — عرض تلميح يدوي
-  const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator.standalone === true);
-  if (isIos && !isStandalone) {
-    setTimeout(() => { iosHint.style.display = 'block'; }, 1200);
-  }
-  iosClose.onclick = () => iosHint.style.display = 'none';
-</script>
+    const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator.standalone === true);
+    if (isIos && !isStandalone) {
+      setTimeout(() => { iosHint.style.display = 'block'; }, 1200);
+    }
+    document.getElementById('ios-a2hs-close').onclick = () => iosHint.style.display = 'none';
+  </script>
 
 </body>
 </html>
