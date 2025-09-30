@@ -59,6 +59,19 @@
         <button id="tab-schedule" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10">الجدولة</button>
         <button id="tab-att" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10">الحضور</button>
       </nav>
+
+      <!-- ✅ أزرار الاستكشاف المضافة -->
+      <a id="btn-explore"
+         href="./explore.html"
+         class="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-white">
+        الاستكشاف
+      </a>
+      <button id="share-explore"
+              class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10">
+        نسخ رابط الاستكشاف
+      </button>
+      <!-- ✅ نهاية الإضافة -->
+
       <button id="logout" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10">خروج</button>
     </div>
   </header>
@@ -309,6 +322,43 @@
   }
   function seasonName(v){ return v==='winter' ? 'شتوية' : (v==='summer' ? 'صيفية' : '—'); }
   function scheduleLocalNotifsForToday(){} // no-op لتجنب أي أخطاء إن ما معرّفة
+
+  // ✅ روابط الاستكشاف (زر فتح + زر مشاركة/نسخ)
+  const EXPLORE_URL = new URL('./explore.html', location.href).href;
+  const btnExplore = document.getElementById('btn-explore');
+  if (btnExplore) btnExplore.href = EXPLORE_URL;
+
+  const shareBtn = document.getElementById('share-explore');
+  async function copyToClipboard(text){
+    try {
+      await navigator.clipboard.writeText(text);
+      toast('اننسخ الرابط ✔︎');
+    } catch {
+      const ta=document.createElement('textarea');
+      ta.value=text; document.body.appendChild(ta);
+      ta.select(); document.execCommand('copy');
+      document.body.removeChild(ta);
+      toast('اننسخ الرابط ✔︎');
+    }
+  }
+  if (shareBtn){
+    shareBtn.onclick = async ()=>{
+      try{
+        if (navigator.share){
+          await navigator.share({
+            title: 'دليل المدرّسين — طلابي',
+            text: 'رابط الاستكشاف للطلاب',
+            url: EXPLORE_URL
+          });
+        } else {
+          await copyToClipboard(EXPLORE_URL);
+        }
+      } catch {
+        await copyToClipboard(EXPLORE_URL);
+      }
+    };
+  }
+  // ✅ نهاية إضافة روابط الاستكشاف
 
   $('#logout').onclick = async ()=>{ await client.auth.signOut(); location.href='./index.html'; };
 
