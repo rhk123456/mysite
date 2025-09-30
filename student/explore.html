@@ -10,11 +10,6 @@
     :root{ color-scheme: dark }
     html,body{ background:#0b1220; color:#e5e7eb; font-family:system-ui,Segoe UI,Roboto,"Cairo","Noto Kufi Arabic",Arial,sans-serif }
     .glass{ background:rgba(255,255,255,.05); backdrop-filter:blur(10px); border:1px solid rgba(255,255,255,.08) }
-    .modal{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.5); z-index:60; }
-    .modal.show{ display:flex; }
-    .star{ cursor:pointer; font-size:20px; }
-    .tab-btn{ padding:.5rem .75rem; border-radius:.5rem; border:1px solid rgba(255,255,255,.1); background:rgba(255,255,255,.05); }
-    .tab-btn.active{ background:#10b981; border-color:#10b981; color:#fff; }
   </style>
 </head>
 <body class="selection:bg-emerald-500/30">
@@ -23,20 +18,15 @@
     <div class="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
       <div class="w-9 h-9 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 grid place-content-center"><span class="text-emerald-300 font-bold">RHK</span></div>
       <h1 class="text-lg font-semibold">دليل المدرّسين</h1>
-
-      <div class="ml-auto flex items-center gap-2">
-        <button id="btn-share" class="hidden px-3 py-1.5 rounded-lg bg-indigo-500 hover:bg-indigo-400 text-white">نسخ رابط الدليل</button>
-        <span id="whoami" class="text-sm text-slate-300 hidden"></span>
-        <button id="btn-login" class="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-white">تسجيل دخول</button>
-        <button id="btn-logout" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 hidden">خروج</button>
-      </div>
+      <a href="./index.html" class="ml-auto px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10">رجوع</a>
     </div>
   </header>
 
   <main class="max-w-7xl mx-auto p-4 grid gap-4">
+    <!-- فلاتر -->
     <section class="glass rounded-2xl p-4">
       <div class="grid md:grid-cols-5 gap-2">
-        <input id="qName" class="rounded-xl bg-white/5 border border-white/10 px-4 py-2" placeholder="بحث بالاسم/المادة/الوصف">
+        <input id="qName" class="rounded-xl bg-white/5 border border-white/10 px-4 py-2" placeholder="بحث بالاسم/المادة">
         <input id="qCity" class="rounded-xl bg-white/5 border border-white/10 px-4 py-2" placeholder="المدينة">
         <input id="qArea" class="rounded-xl bg-white/5 border border-white/10 px-4 py-2" placeholder="المنطقة">
         <select id="qWeekday" class="rounded-xl bg-white/5 border border-white/10 px-3 py-2">
@@ -49,344 +39,36 @@
       <div id="err" class="text-rose-300 text-sm mt-2 hidden"></div>
     </section>
 
+    <!-- قائمة المدرّسين -->
     <section id="list" class="grid gap-3"></section>
     <div id="no-results" class="hidden text-slate-400 p-4 glass rounded-xl">لا توجد نتائج</div>
   </main>
 
-  <!-- مودال الدخول: تبويب (كلمة مرور / Magic Link) -->
-  <div id="auth-modal" class="modal">
-    <div class="glass rounded-2xl p-4 w-[520px] max-w-[95vw]">
-      <div class="flex items-center mb-3">
-        <div class="font-semibold">تسجيل الدخول</div>
-        <button id="auth-close" class="ml-auto px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10">إغلاق</button>
-      </div>
-
-      <div class="flex gap-2 mb-3">
-        <button id="tab-pass" class="tab-btn active">بريد + كلمة مرور</button>
-        <button id="tab-otp"  class="tab-btn">Magic Link</button>
-      </div>
-
-      <!-- تبويب: بريد + كلمة مرور -->
-      <div id="pane-pass">
-        <div class="space-y-2">
-          <input id="pass-email" type="email" class="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2" placeholder="you@example.com">
-          <input id="pass-pass"  type="password" class="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2" placeholder="كلمة المرور (6+ أحرف)">
-          <div class="flex items-center gap-2">
-            <button id="do-signin" class="px-3 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white">دخول</button>
-            <button id="do-signup" class="px-3 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white">إنشاء حساب طالب</button>
-            <button id="do-reset"  class="ml-auto px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200">نسيت كلمة المرور؟</button>
-          </div>
-          <div id="pass-msg" class="text-sm text-slate-400"></div>
-        </div>
-      </div>
-
-      <!-- تبويب: Magic Link -->
-      <div id="pane-otp" class="hidden">
-        <div class="space-y-2">
-          <input id="otp-email" type="email" class="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2" placeholder="you@example.com">
-          <button id="do-otp" class="px-3 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white">أرسل رابط الدخول</button>
-          <div class="text-xs text-slate-400">* افتح الرابط من نفس الجهاز والمتصفح.</div>
-          <div id="otp-msg" class="text-sm text-slate-400"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- مودال تغيير كلمة المرور (بعد رابط الاستعادة) -->
-  <div id="reset-modal" class="modal">
-    <div class="glass rounded-2xl p-4 w-[420px] max-w-[95vw]">
-      <div class="flex items-center mb-3">
-        <div class="font-semibold">تعيين كلمة مرور جديدة</div>
-        <button id="reset-close" class="ml-auto px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10">إغلاق</button>
-      </div>
-      <div class="space-y-2">
-        <input id="new-pass" type="password" class="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2" placeholder="كلمة مرور جديدة (6+ أحرف)">
-        <button id="apply-pass" class="px-3 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white">حفظ</button>
-        <div id="reset-msg" class="text-sm text-slate-400"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- مودال التقييم -->
-  <div id="rev-modal" class="modal">
-    <div class="glass rounded-2xl p-4 w-[560px] max-w-[95vw]">
-      <div class="flex items-center mb-3">
-        <div class="font-semibold">تقييم <span id="rev-teacher-name" class="text-emerald-300"></span></div>
-        <button id="rev-close" class="ml-auto px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10">إغلاق</button>
-      </div>
-      <div class="space-y-3">
-        <div class="flex gap-1" id="rev-stars"></div>
-        <textarea id="rev-comment" class="w-full h-24 rounded-xl bg-white/5 border border-white/10 px-3 py-2" placeholder="ملاحظة (اختياري)"></textarea>
-        <div class="flex items-center gap-2">
-          <button id="rev-save" class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white">حفظ التقييم</button>
-          <div id="rev-msg" class="text-sm text-slate-400"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 hidden">
-    <div class="glass rounded-xl px-4 py-2 text-sm shadow-lg">تم ✅</div>
-  </div>
-
   <script>
-    // ===== Supabase (مشروعك) =====
+    // Supabase
     const SUPABASE_URL  = "https://yxhezuscajteonrcpcms.supabase.co";
     const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4aGV6dXNjYWp0ZW9ucmNwY21zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5MTk4MjEsImV4cCI6MjA3NDQ5NTgyMX0.yHLhKPQ-Lu6e-cxzBo8_xsr6Gzr5ORKyKBgDCSTXukE";
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-    // ===== Helpers =====
     const $ = s => document.querySelector(s);
-    const WD = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+    const wd = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
     const fmtHM = t => (t||'').slice(0,5);
     function showErr(m){ const e=$('#err'); e.textContent=m||''; e.classList.toggle('hidden', !m); }
-    function toast(msg='تم ✅'){ const t=$('#toast'); t.querySelector('div').textContent=msg; t.classList.remove('hidden'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.add('hidden'),1400); }
 
-    // تبويب مودال الدخول
-    const authModal = $('#auth-modal');
-    const resetModal = $('#reset-modal');
-    function switchTab(k){ $('#tab-pass').classList.toggle('active', k==='pass'); $('#tab-otp').classList.toggle('active', k==='otp'); $('#pane-pass').classList.toggle('hidden', k!=='pass'); $('#pane-otp').classList.toggle('hidden', k!=='otp'); }
-    $('#tab-pass').onclick = ()=> switchTab('pass');
-    $('#tab-otp').onclick  = ()=> switchTab('otp');
-
-    // فتح/إغلاق
-    $('#btn-login').onclick = ()=>{ $('#pass-msg').textContent=''; $('#otp-msg').textContent=''; switchTab('pass'); authModal.classList.add('show'); };
-    $('#auth-close').onclick = ()=> authModal.classList.remove('show');
-
-    // ===== كلمة مرور: دخول/إنشاء/استعادة =====
-    const REDIRECT = window.location.origin + window.location.pathname;
-
-    $('#do-signin').onclick = async ()=>{
-      const email = $('#pass-email').value.trim();
-      const pass  = $('#pass-pass').value;
-      $('#pass-msg').textContent = 'جاري الدخول...';
-      const { error } = await client.auth.signInWithPassword({ email, password: pass });
-      if (error) {
-        if (error.message.includes('Invalid login credentials')) {
-          $('#pass-msg').textContent = 'بيانات غير صحيحة أو الحساب غير موجود.';
-        } else if (error.message.toLowerCase().includes('email not confirmed')) {
-          $('#pass-msg').textContent = 'أكد بريدك أولًا — تفقد بريدك وافتح رابط التأكيد.';
-        } else { $('#pass-msg').textContent = error.message; }
-        return;
-      }
-      $('#pass-msg').textContent = '';
-      authModal.classList.remove('show');
-      toast('تم الدخول ✅');
-      updateAuthUI(); run();
-    };
-
-    $('#do-signup').onclick = async ()=>{
-      const email = $('#pass-email').value.trim();
-      const pass  = $('#pass-pass').value;
-      if(pass.length < 6){ $('#pass-msg').textContent='كلمة المرور لازم 6 أحرف على الأقل'; return; }
-      $('#pass-msg').textContent = 'إنشاء حساب...';
-      const { error } = await client.auth.signUp({
-        email, password: pass,
-        options: { emailRedirectTo: REDIRECT, data:{ role:'student' } }
-      });
-      $('#pass-msg').textContent = error ? error.message : 'إذا التفعيل مفعّل: انرسل رابط تأكيد لبريدك. بعد التأكيد ارجع للصفحة.';
-    };
-
-    $('#do-reset').onclick = async ()=>{
-      const email = $('#pass-email').value.trim();
-      if(!email){ $('#pass-msg').textContent='أدخل البريد أولاً'; return; }
-      $('#pass-msg').textContent='إرسال رابط الاستعادة...';
-      const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo: REDIRECT + '#type=recovery' });
-      $('#pass-msg').textContent = error ? error.message : 'تفقد بريدك لرابط الاستعادة.';
-    };
-
-    // Magic Link
-    $('#do-otp').onclick = async ()=>{
-      const email = $('#otp-email').value.trim();
-      if(!email){ $('#otp-msg').textContent='أدخل البريد أولاً'; return; }
-      $('#otp-msg').textContent='إرسال الرابط...';
-      const { error } = await client.auth.signInWithOtp({
-        email,
-        options: { emailRedirectTo: REDIRECT, shouldCreateUser: true }
-      });
-      $('#otp-msg').textContent = error ? error.message : 'تم الإرسال — افتح الرابط من نفس المتصفح.';
-    };
-
-    // استعادة كلمة المرور (فتح المودال لو رجعنا بـ #type=recovery)
-    function checkRecoveryInHash(){
-      if(location.hash.includes('type=recovery')){
-        $('#reset-msg').textContent='ضع كلمة مرور جديدة';
-        resetModal.classList.add('show');
-      }
-    }
-    $('#reset-close').onclick = ()=> resetModal.classList.remove('show');
-    $('#apply-pass').onclick = async ()=>{
-      const newPass = $('#new-pass').value;
-      if(newPass.length < 6){ $('#reset-msg').textContent='أقل شيء 6 أحرف'; return; }
-      $('#reset-msg').textContent='حفظ...';
-      const { error } = await client.auth.updateUser({ password: newPass });
-      if(error){ $('#reset-msg').textContent = error.message; return; }
-      $('#reset-msg').textContent='تم التحديث — تقدر تغلق النافذة';
-      toast('تم تغيير كلمة المرور ✅');
-      setTimeout(()=> resetModal.classList.remove('show'), 900);
-      updateAuthUI();
-    };
-
-    // خروج
-    $('#btn-logout').onclick = async ()=>{ await client.auth.signOut(); updateAuthUI(); toast('تم تسجيل الخروج'); };
-
-    // ===== من أنا؟ + زر المشاركة للمدرّس =====
-    let CURRENT_ROLE = null;
-    async function getRole(){
-      const { data:{ user } } = await client.auth.getUser();
-      if(!user) return { user:null, role:null, name:null };
-      const { data: p } = await client.from('profiles').select('role,display_name').eq('id', user.id).maybeSingle();
-      return { user, role: p?.role || null, name: p?.display_name || user.email };
-    }
-    async function updateAuthUI(){
-      const { user, role, name } = await getRole();
-      CURRENT_ROLE = role || null;
-      const who = $('#whoami'), login=$('#btn-login'), logout=$('#btn-logout'), share=$('#btn-share');
-
-      if(user){
-        who.textContent = `داخل كـ ${role||'—'}: ${name||user.email}`;
-        who.classList.remove('hidden');
-        login.classList.add('hidden');
-        logout.classList.remove('hidden');
-        // زر مشاركة رابط الدليل للمدرّس فقط
-        share.classList.toggle('hidden', role!=='teacher');
-      }else{
-        who.classList.add('hidden');
-        login.classList.remove('hidden');
-        logout.classList.add('hidden');
-        share.classList.add('hidden');
-      }
-    }
-    client.auth.onAuthStateChange(async ()=>{ await updateAuthUI(); run(); });
-
-    // نسخ رابط الدليل (للمدرّس يشارك الطلاب)
-    $('#btn-share').onclick = async ()=>{
-      const url = window.location.origin + window.location.pathname; // رابط ثابت للصفحة
-      await navigator.clipboard.writeText(url);
-      toast('اننسخ الرابط ✔︎');
-    };
-
-    // ===== التقييم (للطلاب فقط) =====
-    const revModal = $('#rev-modal');
-    const revStars = $('#rev-stars');
-    const revComment = $('#rev-comment');
-    const revMsg = $('#rev-msg');
-    let REV_STATE = { teacher_id: null, teacher_name: '', stars: 0 };
-
-    function setStars(n){
-      REV_STATE.stars = n;
-      revStars.innerHTML = '';
-      for(let i=1;i<=5;i++){
-        const span = document.createElement('span');
-        span.className = 'star';
-        span.textContent = i<=n ? '★' : '☆';
-        span.onclick = ()=> setStars(i);
-        revStars.appendChild(span);
-      }
-    }
-    setStars(0);
-    $('#rev-close').onclick = ()=> revModal.classList.remove('show');
-
-    async function openReviewModal(teacher){
-      const { user, role } = await getRole();
-      if(!user){ $('#btn-login').click(); return; }
-      if(role !== 'student'){ alert('التقييم متاح للطلاب فقط.'); return; }
-      REV_STATE.teacher_id = teacher.teacher_id;
-      REV_STATE.teacher_name = teacher.name || 'مدرّس';
-      $('#rev-teacher-name').textContent = REV_STATE.teacher_name;
-      setStars(0); revComment.value=''; revMsg.textContent='';
-
-      const { data: r } = await client.from('teacher_reviews')
-        .select('stars,comment')
-        .eq('teacher_id', teacher.teacher_id)
-        .eq('student_user_id', user.id)
-        .maybeSingle();
-      if(r){ setStars(Number(r.stars||0)); revComment.value = r.comment || ''; }
-
-      revModal.classList.add('show');
-    }
-
-    async function saveReview(){
-      const { user, role } = await getRole();
-      if(!user){ alert('سجّل دخول أولًا'); return; }
-      if(role !== 'student'){ alert('التقييم للطلاب فقط'); return; }
-      if(!REV_STATE.teacher_id || REV_STATE.stars < 1){ revMsg.textContent='اختر من 1 إلى 5 نجوم.'; return; }
-      const row = { teacher_id: REV_STATE.teacher_id, student_user_id: user.id, stars: REV_STATE.stars, comment: revComment.value.trim() || null };
-      const { error } = await client.from('teacher_reviews').upsert([row], { onConflict: 'teacher_id,student_user_id' });
-      if(error){ revMsg.textContent = error.message; return; }
-      toast('انحفظ التقييم ✅'); revModal.classList.remove('show'); run();
-    }
-    $('#rev-save').onclick = saveReview;
-
-    // ===== عرض المدرّسين + الأوقات (بدون حجز) =====
-    function teacherCard(t, slots){
-      const ph = t.photo_url
-        ? `<img src="${t.photo_url}" class="w-12 h-12 rounded-xl object-cover border border-white/10" />`
-        : `<div class="w-12 h-12 rounded-xl grid place-content-center bg-white/5 border border-white/10">👨‍🏫</div>`;
-
-      const stars = Number(t.rating_avg||0);
-      const full = '★'.repeat(Math.round(stars));
-      const empty = '☆'.repeat(5-Math.round(stars));
-      const rating = `${full}${empty} <span class="text-slate-400 text-xs">(${t.rating_count})</span>`;
-
-      const rows = (slots||[]).length
-        ? slots.map(sl=>{
-            const fullCap = sl.current_count >= sl.capacity;
-            return `
-              <div class="flex items-center gap-3 p-2 rounded-lg bg-white/5 border border-white/10">
-                <div class="w-12 h-12 grid place-content-center rounded-xl ${fullCap?'bg-rose-500/20 border border-rose-400/30':'bg-emerald-500/20 border border-emerald-400/30'}">
-                  <span class="text-sm font-bold ${fullCap?'text-rose-300':'text-emerald-300'}">${sl.current_count}/${sl.capacity}</span>
-                </div>
-                <div class="mr-auto">
-                  <div class="font-semibold">${sl.title}</div>
-                  <div class="text-xs text-slate-400">${WD[sl.weekday]} • ${fmtHM(sl.start_time)}–${fmtHM(sl.end_time)}</div>
-                </div>
-              </div>`;
-          }).join('')
-        : `<div class="text-slate-400">لا توجد أوقات معلنة</div>`;
-
-      // زر التقييم يظهر فقط إذا داخل كطالب
-      const reviewBtn = (CURRENT_ROLE === 'student')
-        ? `<button class="px-3 py-1.5 rounded-lg bg-indigo-500 hover:bg-indigo-400 text-white" data-review="${t.teacher_id}">قيّم</button>`
-        : '';
-
-      const el = document.createElement('section');
-      el.className = 'glass rounded-2xl p-4';
-      el.innerHTML = `
-        <div class="flex items-center gap-3">
-          ${ph}
-          <div class="mr-auto">
-            <div class="font-semibold">${t.name} <span class="text-xs text-slate-400">(${t.subject||'—'})</span></div>
-            <div class="text-xs text-slate-400">${t.city||''} ${t.area? '• '+t.area:''}</div>
-            <div class="text-amber-300 text-sm">${rating}</div>
-            ${t.bio_preview ? `<div class="text-xs text-slate-400 mt-1">${t.bio_preview}</div>`:''}
-          </div>
-          <div class="grid gap-2">
-            ${reviewBtn}
-          </div>
-        </div>
-        <div class="mt-3 grid md:grid-cols-2 lg:grid-cols-3 gap-2">
-          ${rows}
-        </div>
-      `;
-      if(reviewBtn){
-        el.querySelector('[data-review]').onclick = ()=> openReviewModal(t);
-      }
-      return el;
-    }
-
+    // جلب المدرّسين وفق الفلاتر
     async function fetchTeachers({q, city, area, weekday}){
-      let rq = client.from('teacher_public').select('*');
-      if(q){ rq = rq.or(`name.ilike.%${q}%,subject.ilike.%${q}%,bio_preview.ilike.%${q}%`); }
-      if(city){ rq = rq.eq('city', city); }
-      if(area){ rq = rq.eq('area', area); }
-      rq = rq.order('name', { ascending:true }).limit(200);
+      let q1 = client.from('teacher_public').select('*');
+      if(q){ q1 = q1.or(`name.ilike.%${q}%,subject.ilike.%${q}%,bio_preview.ilike.%${q}%`); }
+      if(city){ q1 = q1.eq('city', city); }
+      if(area){ q1 = q1.eq('area', area); }
+      q1 = q1.order('name', { ascending:true }).limit(200);
 
-      const { data: teachers, error } = await rq;
+      const { data: teachers, error } = await q1;
       if(error) throw new Error(error.message);
 
       if(weekday==='' || weekday===undefined || weekday===null) return teachers;
 
+      // فلترة المدرّسين اللي عندهم أوقات بهذا اليوم
       const ids = teachers.map(t=>t.teacher_id);
       if(!ids.length) return teachers;
 
@@ -400,6 +82,7 @@
       return teachers.filter(t => ok.has(t.teacher_id));
     }
 
+    // جلب الأوقات لكل المدرّسين
     async function fetchSlotsByTeachers(ids){
       if(!ids.length) return [];
       const { data, error } = await client.from('slot_public_counts')
@@ -409,6 +92,46 @@
         .order('start_time',{ascending:true});
       if(error) throw new Error(error.message);
       return data||[];
+    }
+
+    // بطاقة مدرس (بدون تقييمات)
+    function teacherBlock(t, slots){
+      const ph = t.photo_url
+        ? `<img src="${t.photo_url}" class="w-12 h-12 rounded-xl object-cover border border-white/10" />`
+        : `<div class="w-12 h-12 rounded-xl grid place-content-center bg-white/5 border border-white/10">👨‍🏫</div>`;
+
+      const rows = slots.length
+        ? slots.map(sl=>{
+            const fullCap = sl.current_count >= sl.capacity;
+            return `
+              <div class="flex items-center gap-3 p-2 rounded-lg bg-white/5 border border-white/10">
+                <div class="w-12 h-12 grid place-content-center rounded-xl ${fullCap?'bg-rose-500/20 border border-rose-400/30':'bg-emerald-500/20 border border-emerald-400/30'}">
+                  <span class="text-sm font-bold ${fullCap?'text-rose-300':'text-emerald-300'}">${sl.current_count}/${sl.capacity}</span>
+                </div>
+                <div class="mr-auto">
+                  <div class="font-semibold">${sl.title}</div>
+                  <div class="text-xs text-slate-400">${wd[sl.weekday]} • ${fmtHM(sl.start_time)}–${fmtHM(sl.end_time)}</div>
+                </div>
+              </div>`;
+          }).join('')
+        : `<div class="text-slate-400">لا توجد أوقات معلنة</div>`;
+
+      const el = document.createElement('section');
+      el.className = 'glass rounded-2xl p-4';
+      el.innerHTML = `
+        <div class="flex items-center gap-3">
+          ${ph}
+          <div class="mr-auto">
+            <div class="font-semibold">${t.name} <span class="text-xs text-slate-400">(${t.subject||'—'})</span></div>
+            <div class="text-xs text-slate-400">${t.city||''} ${t.area? '• '+t.area:''}</div>
+            ${t.bio_preview ? `<div class="text-xs text-slate-400 mt-1">${t.bio_preview}</div>`:''}
+          </div>
+        </div>
+        <div class="mt-3 grid md:grid-cols-2 lg:grid-cols-3 gap-2">
+          ${rows}
+        </div>
+      `;
+      return el;
     }
 
     async function run(){
@@ -437,71 +160,24 @@
           slotsByTeacher.get(s.teacher_id).push(s);
         });
 
-        const frag = document.createDocumentFragment();
+        const container = document.createDocumentFragment();
         teachers.forEach(t=>{
           const ts = (slotsByTeacher.get(t.teacher_id)||[]).sort((a,b)=>{
             if(a.weekday!==b.weekday) return a.weekday-b.weekday;
             return (a.start_time||'').localeCompare(b.start_time||'');
           });
-          frag.appendChild(teacherCard(t, ts));
+          container.appendChild(teacherBlock(t, ts));
         });
-
         $('#list').innerHTML = '';
-        $('#list').appendChild(frag);
+        $('#list').appendChild(container);
       }catch(err){
         console.error(err);
         showErr(err.message||String(err));
       }
     }
 
-    // تشغيل البحث عند التغيير/Enter
-    $('#btnSearch').onclick = run;
-    $('#qName').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); run(); }});
-    $('#qCity').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); run(); }});
-    $('#qArea').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); run(); }});
-    $('#qWeekday').addEventListener('change', run);
-
-    // ===== معالجة جميع سيناريوهات الرجوع من الروابط (PKCE & hash) =====
-    (async () => {
-      const url = new URL(window.location.href);
-      let didSetSession = false;
-
-      // PKCE: ?code=...
-      const code = url.searchParams.get('code');
-      if (code) {
-        try {
-          const { error } = await client.auth.exchangeCodeForSession(url.href);
-          if (error) console.error('exchangeCodeForSession:', error);
-          didSetSession = !error;
-        } catch (e) { console.error(e); }
-        history.replaceState({}, document.title, url.origin + url.pathname);
-      }
-
-      // قديم: #access_token=...
-      if (location.hash.includes('access_token')) {
-        try {
-          const h = new URLSearchParams(location.hash.slice(1));
-          const access_token  = h.get('access_token');
-          const refresh_token = h.get('refresh_token');
-          if (access_token && refresh_token) {
-            const { error } = await client.auth.setSession({ access_token, refresh_token });
-            if (error) console.error('setSession:', error);
-            didSetSession = !error;
-          }
-        } catch (e) { console.error(e); }
-        history.replaceState({}, document.title, url.origin + url.pathname);
-      }
-
-      // استعادة كلمة المرور (اختياري)
-      checkRecoveryInHash?.();
-
-      await updateAuthUI();
-      run();
-
-      if (!didSetSession && (code || location.hash.includes('access_token'))) {
-        console.warn('Auth callback detected but session not set. تحقق من Redirect URLs في Supabase.');
-      }
-    })();
+    $('#btnSearch').addEventListener('click', run);
+    run();
   </script>
 
 </body>
