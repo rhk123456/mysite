@@ -24,10 +24,8 @@
       <div class="w-9 h-9 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 grid place-content-center"><span class="text-emerald-300 font-bold">RHK</span></div>
       <h1 class="text-lg font-semibold">دليل المدرّسين</h1>
 
-      <div id="auth-box" class="ml-auto flex items-center gap-2">
-        <!-- يظهر للمدرّس فقط -->
-        <button id="btn-share" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 hidden">نسخ رابط الصفحة للطلاب</button>
-
+      <div class="ml-auto flex items-center gap-2">
+        <button id="btn-share" class="hidden px-3 py-1.5 rounded-lg bg-indigo-500 hover:bg-indigo-400 text-white">نسخ رابط الدليل</button>
         <span id="whoami" class="text-sm text-slate-300 hidden"></span>
         <button id="btn-login" class="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-white">تسجيل دخول</button>
         <button id="btn-logout" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 hidden">خروج</button>
@@ -144,7 +142,7 @@
     function showErr(m){ const e=$('#err'); e.textContent=m||''; e.classList.toggle('hidden', !m); }
     function toast(msg='تم ✅'){ const t=$('#toast'); t.querySelector('div').textContent=msg; t.classList.remove('hidden'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.add('hidden'),1400); }
 
-    // ===== تبويب مودال الدخول =====
+    // تبويب مودال الدخول
     const authModal = $('#auth-modal');
     const resetModal = $('#reset-modal');
     function switchTab(k){ $('#tab-pass').classList.toggle('active', k==='pass'); $('#tab-otp').classList.toggle('active', k==='otp'); $('#pane-pass').classList.toggle('hidden', k!=='pass'); $('#pane-otp').classList.toggle('hidden', k!=='otp'); }
@@ -156,6 +154,8 @@
     $('#auth-close').onclick = ()=> authModal.classList.remove('show');
 
     // ===== كلمة مرور: دخول/إنشاء/استعادة =====
+    const REDIRECT = window.location.origin + window.location.pathname;
+
     $('#do-signin').onclick = async ()=>{
       const email = $('#pass-email').value.trim();
       const pass  = $('#pass-pass').value;
@@ -163,12 +163,10 @@
       const { error } = await client.auth.signInWithPassword({ email, password: pass });
       if (error) {
         if (error.message.includes('Invalid login credentials')) {
-          $('#pass-msg').textContent = 'بيانات غير صحيحة أو الحساب غير موجود. للمدرّس: استخدم دعوة أو Magic Link أول مرة.';
+          $('#pass-msg').textContent = 'بيانات غير صحيحة أو الحساب غير موجود.';
         } else if (error.message.toLowerCase().includes('email not confirmed')) {
-          $('#pass-msg').textContent = 'يجب تأكيد البريد أولًا — تفقد بريدك وافتح رابط التأكيد.';
-        } else {
-          $('#pass-msg').textContent = error.message;
-        }
+          $('#pass-msg').textContent = 'أكد بريدك أولًا — تفقد بريدك وافتح رابط التأكيد.';
+        } else { $('#pass-msg').textContent = error.message; }
         return;
       }
       $('#pass-msg').textContent = '';
@@ -182,17 +180,18 @@
       const pass  = $('#pass-pass').value;
       if(pass.length < 6){ $('#pass-msg').textContent='كلمة المرور لازم 6 أحرف على الأقل'; return; }
       $('#pass-msg').textContent = 'إنشاء حساب...';
-      const redirect = window.location.origin + window.location.pathname;
-      const { error } = await client.auth.signUp({ email, password: pass, options: { emailRedirectTo: redirect, data:{ role:'student' } } });
-      $('#pass-msg').textContent = error ? error.message : 'انرسل رابط تأكيد إلى بريدك. بعد التأكيد ارجع للصفحة.';
+      const { error } = await client.auth.signUp({
+        email, password: pass,
+        options: { emailRedirectTo: REDIRECT, data:{ role:'student' } }
+      });
+      $('#pass-msg').textContent = error ? error.message : 'إذا التفعيل مفعّل: انرسل رابط تأكيد لبريدك. بعد التأكيد ارجع للصفحة.';
     };
 
     $('#do-reset').onclick = async ()=>{
       const email = $('#pass-email').value.trim();
       if(!email){ $('#pass-msg').textContent='أدخل البريد أولاً'; return; }
       $('#pass-msg').textContent='إرسال رابط الاستعادة...';
-      const redirect = window.location.origin + window.location.pathname + '#type=recovery';
-      const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo: redirect });
+      const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo: REDIRECT + '#type=recovery' });
       $('#pass-msg').textContent = error ? error.message : 'تفقد بريدك لرابط الاستعادة.';
     };
 
@@ -201,8 +200,10 @@
       const email = $('#otp-email').value.trim();
       if(!email){ $('#otp-msg').textContent='أدخل البريد أولاً'; return; }
       $('#otp-msg').textContent='إرسال الرابط...';
-      const redirect = window.location.href.split('#')[0];
-      const { error } = await client.auth.signInWithOtp({ email, options:{ emailRedirectTo: redirect } });
+      const { error } = await client.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: REDIRECT, shouldCreateUser: true }
+      });
       $('#otp-msg').textContent = error ? error.message : 'تم الإرسال — افتح الرابط من نفس المتصفح.';
     };
 
@@ -229,41 +230,41 @@
     // خروج
     $('#btn-logout').onclick = async ()=>{ await client.auth.signOut(); updateAuthUI(); toast('تم تسجيل الخروج'); };
 
-    // ===== من أنا؟ =====
+    // ===== من أنا؟ + زر المشاركة للمدرّس =====
+    let CURRENT_ROLE = null;
     async function getRole(){
       const { data:{ user } } = await client.auth.getUser();
       if(!user) return { user:null, role:null, name:null };
       const { data: p } = await client.from('profiles').select('role,display_name').eq('id', user.id).maybeSingle();
       return { user, role: p?.role || null, name: p?.display_name || user.email };
     }
-
-    // زر نسخ الرابط (للمدرّسين فقط)
-    const btnShare = document.getElementById('btn-share');
-    function copyExploreLink(){
-      const url = (location.origin + location.pathname); // نفس الصفحة
-      (async ()=>{
-        try{
-          await navigator.clipboard.writeText(url);
-          toast('اننسخ رابط الصفحة ✅');
-        }catch{
-          alert('هذا رابط الصفحة للطلاب:\n' + url);
-        }
-      })();
-    }
-    if(btnShare){ btnShare.onclick = copyExploreLink; }
-
     async function updateAuthUI(){
       const { user, role, name } = await getRole();
-      const who = $('#whoami'), login=$('#btn-login'), logout=$('#btn-logout');
+      CURRENT_ROLE = role || null;
+      const who = $('#whoami'), login=$('#btn-login'), logout=$('#btn-logout'), share=$('#btn-share');
 
-      // إظهار زر "نسخ رابط الصفحة للطلاب" فقط للمدرّس/الأدمن
-      if(user && (role==='teacher' || role==='admin')) btnShare.classList.remove('hidden');
-      else btnShare.classList.add('hidden');
-
-      if(user){ who.textContent = `داخل كـ ${role||'—'}: ${name||user.email}`; who.classList.remove('hidden'); login.classList.add('hidden'); logout.classList.remove('hidden'); }
-      else { who.classList.add('hidden'); login.classList.remove('hidden'); logout.classList.add('hidden'); }
+      if(user){
+        who.textContent = `داخل كـ ${role||'—'}: ${name||user.email}`;
+        who.classList.remove('hidden');
+        login.classList.add('hidden');
+        logout.classList.remove('hidden');
+        // زر مشاركة رابط الدليل للمدرّس فقط
+        share.classList.toggle('hidden', role!=='teacher');
+      }else{
+        who.classList.add('hidden');
+        login.classList.remove('hidden');
+        logout.classList.add('hidden');
+        share.classList.add('hidden');
+      }
     }
     client.auth.onAuthStateChange(async ()=>{ await updateAuthUI(); run(); });
+
+    // نسخ رابط الدليل (للمدرّس يشارك الطلاب)
+    $('#btn-share').onclick = async ()=>{
+      const url = window.location.origin + window.location.pathname; // رابط ثابت للصفحة
+      await navigator.clipboard.writeText(url);
+      toast('اننسخ الرابط ✔︎');
+    };
 
     // ===== التقييم (للطلاب فقط) =====
     const revModal = $('#rev-modal');
@@ -344,6 +345,11 @@
           }).join('')
         : `<div class="text-slate-400">لا توجد أوقات معلنة</div>`;
 
+      // زر التقييم يظهر فقط إذا داخل كطالب
+      const reviewBtn = (CURRENT_ROLE === 'student')
+        ? `<button class="px-3 py-1.5 rounded-lg bg-indigo-500 hover:bg-indigo-400 text-white" data-review="${t.teacher_id}">قيّم</button>`
+        : '';
+
       const el = document.createElement('section');
       el.className = 'glass rounded-2xl p-4';
       el.innerHTML = `
@@ -356,14 +362,16 @@
             ${t.bio_preview ? `<div class="text-xs text-slate-400 mt-1">${t.bio_preview}</div>`:''}
           </div>
           <div class="grid gap-2">
-            <button class="px-3 py-1.5 rounded-lg bg-indigo-500 hover:bg-indigo-400 text-white" data-review="${t.teacher_id}">قيّم</button>
+            ${reviewBtn}
           </div>
         </div>
         <div class="mt-3 grid md:grid-cols-2 lg:grid-cols-3 gap-2">
           ${rows}
         </div>
       `;
-      el.querySelector('[data-review]').onclick = ()=> openReviewModal(t);
+      if(reviewBtn){
+        el.querySelector('[data-review]').onclick = ()=> openReviewModal(t);
+      }
       return el;
     }
 
@@ -446,6 +454,13 @@
       }
     }
 
+    // تشغيل البحث عند التغيير/Enter
+    $('#btnSearch').onclick = run;
+    $('#qName').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); run(); }});
+    $('#qCity').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); run(); }});
+    $('#qArea').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); run(); }});
+    $('#qWeekday').addEventListener('change', run);
+
     // ===== معالجة جميع سيناريوهات الرجوع من الروابط (PKCE & hash) =====
     (async () => {
       const url = new URL(window.location.href);
@@ -487,9 +502,6 @@
         console.warn('Auth callback detected but session not set. تحقق من Redirect URLs في Supabase.');
       }
     })();
-
-    // زر تحديث البحث
-    document.getElementById('btnSearch').onclick = run;
   </script>
 
 </body>
