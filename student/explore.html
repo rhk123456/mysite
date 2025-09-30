@@ -25,6 +25,9 @@
       <h1 class="text-lg font-semibold">دليل المدرّسين</h1>
 
       <div id="auth-box" class="ml-auto flex items-center gap-2">
+        <!-- يظهر للمدرّس فقط -->
+        <button id="btn-share" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 hidden">نسخ رابط الصفحة للطلاب</button>
+
         <span id="whoami" class="text-sm text-slate-300 hidden"></span>
         <button id="btn-login" class="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-white">تسجيل دخول</button>
         <button id="btn-logout" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 hidden">خروج</button>
@@ -233,9 +236,30 @@
       const { data: p } = await client.from('profiles').select('role,display_name').eq('id', user.id).maybeSingle();
       return { user, role: p?.role || null, name: p?.display_name || user.email };
     }
+
+    // زر نسخ الرابط (للمدرّسين فقط)
+    const btnShare = document.getElementById('btn-share');
+    function copyExploreLink(){
+      const url = (location.origin + location.pathname); // نفس الصفحة
+      (async ()=>{
+        try{
+          await navigator.clipboard.writeText(url);
+          toast('اننسخ رابط الصفحة ✅');
+        }catch{
+          alert('هذا رابط الصفحة للطلاب:\n' + url);
+        }
+      })();
+    }
+    if(btnShare){ btnShare.onclick = copyExploreLink; }
+
     async function updateAuthUI(){
       const { user, role, name } = await getRole();
       const who = $('#whoami'), login=$('#btn-login'), logout=$('#btn-logout');
+
+      // إظهار زر "نسخ رابط الصفحة للطلاب" فقط للمدرّس/الأدمن
+      if(user && (role==='teacher' || role==='admin')) btnShare.classList.remove('hidden');
+      else btnShare.classList.add('hidden');
+
       if(user){ who.textContent = `داخل كـ ${role||'—'}: ${name||user.email}`; who.classList.remove('hidden'); login.classList.add('hidden'); logout.classList.remove('hidden'); }
       else { who.classList.add('hidden'); login.classList.remove('hidden'); logout.classList.add('hidden'); }
     }
@@ -463,6 +487,9 @@
         console.warn('Auth callback detected but session not set. تحقق من Redirect URLs في Supabase.');
       }
     })();
+
+    // زر تحديث البحث
+    document.getElementById('btnSearch').onclick = run;
   </script>
 
 </body>
