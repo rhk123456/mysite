@@ -4,7 +4,6 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>منصة طلابي</title>
-  <!-- للتجربة فقط. للإنتاج: ابني CSS محلي -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <style>
@@ -18,14 +17,10 @@
   </style>
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#10b981">
-
-  <!-- iOS PWA -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="apple-touch-icon" href="/icons/icon-192.png">
-
   <script>
-    // تسجيل SW
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
@@ -45,7 +40,6 @@
       });
     }
   </script>
-
 </head>
 <body class="text-slate-100 selection:bg-emerald-500/30">
   <header class="sticky top-0 z-30 glass">
@@ -60,7 +54,7 @@
         <button id="tab-att" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10">الحضور</button>
       </nav>
 
-      <!-- ✅ أزرار الاستكشاف المضافة -->
+      <!-- روابط الاستكشاف -->
       <a id="btn-explore"
          href="./explore.html"
          class="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-white">
@@ -70,7 +64,7 @@
               class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10">
         نسخ رابط الاستكشاف
       </button>
-      <!-- ✅ نهاية الإضافة -->
+      <!-- نهاية الإضافة -->
 
       <button id="logout" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10">خروج</button>
     </div>
@@ -85,23 +79,17 @@
     <section id="view-students" class="grid gap-4">
       <section class="glass rounded-2xl p-4">
         <h2 class="text-base font-semibold mb-3">إضافة / تعديل طالب</h2>
-
-        <!-- تم تعديل الشبكة لإضافة حقل الوجبة -->
         <form id="student-form" class="grid md:grid-cols-6 gap-3">
           <input name="id" type="hidden" />
           <input name="name" class="rounded-xl bg-white/5 border border-white/10 px-4 py-2" placeholder="اسم الطالب" required />
           <input name="phone" class="rounded-xl bg-white/5 border border-white/10 px-4 py-2" placeholder="رقم الهاتف" />
-
-          <!-- حقل الوجبة (شتوية/صيفية) -->
           <select name="season" class="rounded-xl bg-white/5 border border-white/10 px-4 py-2">
             <option value="">— الوجبة —</option>
             <option value="winter">شتوية</option>
             <option value="summer">صيفية</option>
           </select>
-
           <input name="plan_amount" type="number" step="0.01" min="0" class="rounded-xl bg-white/5 border border-white/10 px-4 py-2" placeholder="المبلغ الكامل" required />
           <input name="paid_amount" type="number" step="0.01" min="0" class="rounded-xl bg-white/5 border border-white/10 px-4 py-2" placeholder="المبلغ الواصل" value="0" readonly />
-
           <div class="flex items-center gap-2 md:col-span-6">
             <button id="save-student" class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white">حفظ</button>
             <button id="reset-student" type="button" class="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10">تفريغ</button>
@@ -259,7 +247,7 @@
     </div>
   </div>
 
-  <!-- Modal: تذكير (نسخة مصغّرة) -->
+  <!-- Modal: تذكير -->
   <div id="rem-modal" class="modal">
     <div class="glass rounded-xl p-3 w-[420px] max-w-[95vw] relative text-sm">
       <div class="flex items-center mb-2">
@@ -267,11 +255,9 @@
         <button id="rem-x" class="ml-2 px-2 py-1 text-xs rounded-lg bg-white/5 hover:bg-white/10 border border-white/10">×</button>
         <button id="rem-close" class="ml-auto px-2.5 py-1.5 text-xs rounded-lg bg-white/5 hover:bg-white/10 border border-white/10">إغلاق</button>
       </div>
-
       <div class="space-y-2">
         <div class="text-xs text-slate-300">النص الجاهز:</div>
         <textarea id="rem-text" class="w-full h-20 rounded-lg bg-white/5 border border-white/10 px-2.5 py-2 text-sm"></textarea>
-
         <div class="flex items-center gap-2">
           <label class="flex items-center gap-2 text-xs text-slate-300">
             <input id="rem-today-only" type="checkbox" class="rounded" checked>
@@ -279,15 +265,12 @@
           </label>
           <span id="rem-day-note" class="text-[11px] text-slate-400"></span>
         </div>
-
         <div class="flex gap-2">
           <button id="rem-copy" class="px-2.5 py-1.5 text-xs rounded-lg bg-emerald-500 hover:bg-emerald-400 text-white">نسخ النص</button>
           <button id="rem-open-all-wa" class="px-2.5 py-1.5 text-xs rounded-lg bg-sky-500 hover:bg-sky-400 text-white">فتح واتساب للطلاب المحددين</button>
         </div>
-
         <div class="text-xs text-slate-300">روابط سريعة (لهذا الوقت فقط):</div>
         <div id="rem-links" class="grid grid-cols-1 gap-2 max-h-48 overflow-auto pr-1"></div>
-
         <div class="flex justify-end pt-1">
           <button id="rem-close-bottom" class="px-2.5 py-1.5 text-xs rounded-lg bg-white/5 hover:bg-white/10 border border-white/10">إغلاق</button>
         </div>
@@ -296,7 +279,6 @@
   </div>
 
   <script>
-  /* ===== Supabase ===== */
   const client = supabase.createClient(
     "https://yxhezuscajteonrcpcms.supabase.co",
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4aGV6dXNjYWp0ZW9ucmNwY21zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5MTk4MjEsImV4cCI6MjA3NDQ5NTgyMX0.yHLhKPQ-Lu6e-cxzBo8_xsr6Gzr5ORKyKBgDCSTXukE"
@@ -305,7 +287,6 @@
   client.auth.onAuthStateChange((_, session) => { if (session?.access_token) client.realtime.setAuth(session.access_token); });
   async function ensureRealtimeAuth(){ const { data:{ session } } = await client.auth.getSession(); if (session?.access_token) client.realtime.setAuth(session.access_token); }
 
-  /* ===== Helpers ===== */
   const $ = s => document.querySelector(s);
   const $$ = s => Array.from(document.querySelectorAll(s));
   function toast(msg='تم ✅'){ const t=$('#toast'); t.querySelector('div').textContent=msg; t.classList.remove('hidden'); clearTimeout(t._timer); t._timer=setTimeout(()=>t.classList.add('hidden'),1400); }
@@ -321,23 +302,18 @@
     return digits;
   }
   function seasonName(v){ return v==='winter' ? 'شتوية' : (v==='summer' ? 'صيفية' : '—'); }
-  function scheduleLocalNotifsForToday(){} // no-op لتجنب أي أخطاء إن ما معرّفة
+  function scheduleLocalNotifsForToday(){}
 
-  // ✅ روابط الاستكشاف (زر فتح + زر مشاركة/نسخ)
+  // روابط الاستكشاف
   const EXPLORE_URL = new URL('./explore.html', location.href).href;
   const btnExplore = document.getElementById('btn-explore');
   if (btnExplore) btnExplore.href = EXPLORE_URL;
-
   const shareBtn = document.getElementById('share-explore');
   async function copyToClipboard(text){
-    try {
-      await navigator.clipboard.writeText(text);
-      toast('اننسخ الرابط ✔︎');
-    } catch {
-      const ta=document.createElement('textarea');
-      ta.value=text; document.body.appendChild(ta);
-      ta.select(); document.execCommand('copy');
-      document.body.removeChild(ta);
+    try { await navigator.clipboard.writeText(text); toast('اننسخ الرابط ✔︎'); }
+    catch {
+      const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta);
+      ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
       toast('اننسخ الرابط ✔︎');
     }
   }
@@ -345,24 +321,16 @@
     shareBtn.onclick = async ()=>{
       try{
         if (navigator.share){
-          await navigator.share({
-            title: 'دليل المدرّسين — طلابي',
-            text: 'رابط الاستكشاف للطلاب',
-            url: EXPLORE_URL
-          });
+          await navigator.share({ title: 'دليل المدرّسين — طلابي', text: 'رابط الاستكشاف للطلاب', url: EXPLORE_URL });
         } else {
           await copyToClipboard(EXPLORE_URL);
         }
-      } catch {
-        await copyToClipboard(EXPLORE_URL);
-      }
+      } catch { await copyToClipboard(EXPLORE_URL); }
     };
   }
-  // ✅ نهاية إضافة روابط الاستكشاف
 
   $('#logout').onclick = async ()=>{ await client.auth.signOut(); location.href='./index.html'; };
 
-  /* ===== Guard ===== */
   async function guard(){
     const { data:{ user } } = await client.auth.getUser();
     if(!user){ location.href='./index.html'; return null; }
@@ -382,7 +350,6 @@
     return user;
   }
 
-  /* ===== Tabs ===== */
   const viewStudents=$('#view-students'), viewSchedule=$('#view-schedule'), viewAtt=$('#view-att');
   function showTab(k){
     viewStudents.classList.toggle('hidden', k!=='students');
@@ -394,7 +361,6 @@
   $('#tab-schedule').onclick = ()=> showTab('schedule');
   $('#tab-att').onclick = ()=> showTab('att');
 
-  /* ===== الطلاب ===== */
   const sForm = $('#student-form'), tbody = $('#tbody-students');
   function sFormGet(){
     const fd=new FormData(sForm);
@@ -491,7 +457,6 @@
     toast('تم تصدير CSV');
   };
 
-  /* ===== Modal: Payments ===== */
   const payModal = $('#pay-modal'), payForm = $('#pay-form'), payList = $('#pay-list'), payInfo = $('#pay-info');
   $('#pay-close').onclick = ()=> payModal.classList.remove('show');
 
@@ -560,7 +525,6 @@
     toast('انحفظت الدفعة ✔︎');
   };
 
-  /* ===== الأوقات + تذكير ===== */
   const slotForm = $('#slot-form'), slotsList=$('#slots-list');
   function slotFormGet(){ const fd=new FormData(slotForm); return { id:fd.get('id')||null, title:(fd.get('title')||'').trim(), weekday:Number(fd.get('weekday')), start_time:fd.get('start_time'), end_time:fd.get('end_time'), capacity:Number(fd.get('capacity')||25) }; }
   function slotFormSet(x){
@@ -681,7 +645,6 @@
     return (stu||[]).filter(s=>!assigned.has(s.id)).length;
   }
 
-  /* ===== لوحة السحب/الإفلات ===== */
   const board = $('#board'); let cache = { students:[], slots:[], assigns:[] };
   const boardSearch=$('#qBoard'); const dayFilterEl = $('#dayFilter'); let boardDayFilter = 'all';
   dayFilterEl.onchange = ()=>{ boardDayFilter = dayFilterEl.value; renderBoard(boardSearch.value); };
@@ -773,13 +736,15 @@
         alert('السعة ممتلئة في هذا الوقت. اختر وقت آخر.');
         return;
       }
-      const { error } = await client.from('student_slots').upsert([{ student_id: studentId, slot_id: slotId, created_by: user.id }], { onConflict:'student_id' });
+      const { error } = await client.from('student_slots').upsert(
+        [{ student_id: studentId, slot_id: slotId, created_by: user.id }],
+        { onConflict:'student_id,slot_id' } // ← مهم
+      );
       if(error) return alert(error.message); toast('نُقل الطالب');
     }
     await refreshBoard(); await refreshSlots();
   }
 
-  /* ===== الحضور ===== */
   const attDate = $('#att-date'), attSlot = $('#att-slot'), attBody = $('#att-body');
   function jsWeekday(dateStr){ const [y,m,d]=dateStr.split('-').map(Number); const localNoon=new Date(y,m-1,d,12,0,0,0); return localNoon.getDay(); }
   async function fillAttSlots(){
@@ -793,7 +758,6 @@
   }
   attDate.onchange = fillAttSlots;
 
-  /* ===== تذكير (واتساب/SMS + تنبيه متصفح) ===== */
   const remModal = $('#rem-modal'), remText = $('#rem-text'), remLinks = $('#rem-links');
   const remTodayOnly = $('#rem-today-only'), remDayNote = $('#rem-day-note');
   function closeRem(){ remModal.classList.remove('show'); }
@@ -905,7 +869,6 @@
     links.forEach((a,i)=> setTimeout(()=>window.open(a.href,'_blank'), i*300));
   };
 
-  /* ===== توزيع تلقائي ===== */
   const autoBtn = document.getElementById('auto-distribute');
   autoBtn.onclick = autoDistribute;
 
@@ -916,12 +879,22 @@
       const slots = cache.slots.filter(s => boardDayFilter==='all' || String(s.weekday)===String(boardDayFilter));
       if (!slots.length) return alert('لا توجد أوقات ضمن الفلتر الحالي');
 
-      const assignedSet = new Set(cache.assigns.map(a=>a.student_id));
-      const unassigned = cache.students.filter(s=>!assignedSet.has(s.id));
-      if (!unassigned.length) return alert('لا يوجد طلاب غير موزعين');
+      // 🔽 الفرق الجوهري: نحسب الموزعين ضمن اليوم/النطاق الحالي فقط
+      const slotIdsInScope = new Set(slots.map(s => s.id));
+      const assignedInScope = new Set(
+        cache.assigns
+          .filter(a => slotIdsInScope.has(a.slot_id))
+          .map(a => a.student_id)
+      );
+      const unassigned = cache.students.filter(s => !assignedInScope.has(s.id));
+      if (!unassigned.length) return alert('لا يوجد طلاب غير موزعين ضمن هذا اليوم/النطاق');
 
       const occBySlot = new Map();
-      cache.assigns.forEach(a => occBySlot.set(a.slot_id, (occBySlot.get(a.slot_id)||0)+1));
+      cache.assigns.forEach(a => {
+        if (slotIdsInScope.has(a.slot_id)) {
+          occBySlot.set(a.slot_id, (occBySlot.get(a.slot_id)||0)+1);
+        }
+      });
       const buckets = slots.map(s => ({ slot_id: s.id, left: Math.max(0, s.capacity - (occBySlot.get(s.id)||0)) }))
                            .filter(b => b.left > 0);
       if (!buckets.length) return alert('كل الأوقات ممتلئة، لا يوجد مقاعد شاغرة');
@@ -943,7 +916,7 @@
       }
 
       if (rows.length) {
-        const { error } = await client.from('student_slots').upsert(rows, { onConflict: 'student_id' });
+        const { error } = await client.from('student_slots').upsert(rows, { onConflict: 'student_id,slot_id' }); // ← مهم
         if (error) return alert(error.message);
       }
 
@@ -956,7 +929,6 @@
     }
   }
 
-  /* ===== Realtime ===== */
   let rtCh=null;
   function unsubscribeRT(){ if(rtCh){ client.removeChannel(rtCh); rtCh=null; } }
   async function subscribeRT() {
@@ -977,10 +949,8 @@
     window.addEventListener('online', subscribeRT, { once:true });
   }
 
-  /* ===== بناء/تحديث اللوحات ===== */
   async function refreshBoard(){ await loadBoardData(); renderBoard($('#qBoard').value); }
 
-  /* ===== تشغيل ===== */
   (function initDefaults(){
     const dt = new Date();
     const iso = new Date(dt.getTime()-dt.getTimezoneOffset()*60000).toISOString().slice(0,10);
@@ -1015,11 +985,9 @@
   </div>
 
   <script>
-    // منطق زر التثبيت
     let deferredPrompt = null;
     const btn = document.getElementById('pwa-install');
     const iosHint = document.getElementById('ios-a2hs');
-    const iosClose = document.getElementById('ios-a2hs-close');
 
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
@@ -1030,14 +998,12 @@
     btn.addEventListener('click', async () => {
       if (!deferredPrompt) return;
       deferredPrompt.prompt();
-      const choice = await deferredPrompt.userChoice;
+      await deferredPrompt.userChoice;
       deferredPrompt = null;
       btn.style.display = 'none';
     });
 
-    window.addEventListener('appinstalled', () => {
-      btn.style.display = 'none';
-    });
+    window.addEventListener('appinstalled', () => { btn.style.display = 'none'; });
 
     const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator.standalone === true);
